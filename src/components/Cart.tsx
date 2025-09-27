@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,38 +7,42 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Plus, Minus, ShoppingBag } from "lucide-react";
 import { Link } from "react-router-dom";
+import { api, Product } from "@/lib/supabase";
 
-interface CartItem {
-  id: number;
-  name: string;
-  image: string;
-  price: number;
+interface CartItem extends Product {
   quantity: number;
-  content: string;
 }
 
 const Cart = () => {
-  // Mock cart data - in a real app this would come from state management
+  const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: 1,
-      name: "10 Cm Electric",
-      image: "/src/assets/sparkler-10cm-electric.jpg",
-      price: 15.5,
-      quantity: 2,
-      content: "1 Box (10 Pcs)",
-    },
-    {
-      id: 3,
-      name: "12 Cm Electric",
-      image: "/src/assets/sparkler-12cm-electric.jpg",
-      price: 19.0,
-      quantity: 1,
-      content: "1 Box (10 Pcs)",
-    },
   ]);
 
-  const updateQuantity = (id: number, change: number) => {
+  useEffect(() => {
+    // In a real app, you would load cart items from localStorage or context
+    // For now, we'll load some sample products
+    loadSampleCartItems();
+  }, []);
+
+  const loadSampleCartItems = async () => {
+    try {
+      setLoading(true);
+      const products = await api.getProducts();
+      // Add first two products to cart as sample
+      if (products.length >= 2) {
+        setCartItems([
+          { ...products[0], quantity: 2 },
+          { ...products[2], quantity: 1 },
+        ]);
+      }
+    } catch (error) {
+      console.error('Error loading cart items:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = (id: string, change: number) => {
     setCartItems(prev =>
       prev.map(item => {
         if (item.id === id) {
@@ -49,17 +54,29 @@ const Cart = () => {
     );
   };
 
-  const removeItem = (id: number) => {
+  const removeItem = (id: string) => {
     setCartItems(prev => prev.filter(item => item.id !== id));
   };
 
   const getTotalPrice = () => {
-    return cartItems.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2);
+    return cartItems.reduce((total, item) => total + (item.discount_price * item.quantity), 0).toFixed(2);
   };
 
   const getTotalItems = () => {
     return cartItems.reduce((total, item) => total + item.quantity, 0);
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4 max-w-2xl">
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading cart...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (cartItems.length === 0) {
     return (
@@ -102,7 +119,7 @@ const Cart = () => {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <img
-                      src={item.image}
+                      src={item.image_url}
                       alt={item.name}
                       className="w-20 h-20 object-cover rounded-md flex-shrink-0"
                     />
@@ -147,8 +164,8 @@ const Cart = () => {
                         </div>
                         
                         <div className="text-right">
-                          <p className="text-sm text-muted-foreground">₹{item.price} each</p>
-                          <p className="font-bold text-primary">₹{(item.price * item.quantity).toFixed(2)}</p>
+                          <p className="text-sm text-muted-foreground">₹{item.discount_price} each</p>
+                          <p className="font-bold text-primary">₹{(item.discount_price * item.quantity).toFixed(2)}</p>
                         </div>
                       </div>
                     </div>

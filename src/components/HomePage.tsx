@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Star, Zap, Gift, Flower } from "lucide-react";
+import { api, Category } from "@/lib/supabase";
 
 // Import images
 import heroBanner from "@/assets/hero-banner.jpg";
@@ -12,8 +14,9 @@ import giftBoxesCategory from "@/assets/gift-boxes-category.jpg";
 import flowerPotsCategory from "@/assets/flower-pots-category.jpg";
 
 const HomePage = () => {
-  const categories = [
+  const [categories, setCategories] = useState([
     {
+      id: "sparklers",
       name: "Sparklers",
       image: sparklersCategory,
       icon: Star,
@@ -21,6 +24,7 @@ const HomePage = () => {
       path: "/products?category=sparklers",
     },
     {
+      id: "rockets",
       name: "Rockets",
       image: rocketsCategory,
       icon: Zap,
@@ -28,6 +32,7 @@ const HomePage = () => {
       path: "/products?category=rockets",
     },
     {
+      id: "gift-boxes",
       name: "Gift Boxes",
       image: giftBoxesCategory,
       icon: Gift,
@@ -35,13 +40,38 @@ const HomePage = () => {
       path: "/products?category=gift-boxes",
     },
     {
+      id: "flower-pots",
       name: "Flower Pots",
       image: flowerPotsCategory,
       icon: Flower,
       description: "Ground-based colorful fountains",
       path: "/products?category=flower-pots",
     },
-  ];
+  ]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      setLoading(false); // Keep static categories for now
+      // Uncomment below to load from database
+      // const data = await api.getCategories();
+      // setCategories(data.map(cat => ({
+      //   id: cat.id,
+      //   name: cat.name.charAt(0).toUpperCase() + cat.name.slice(1),
+      //   image: cat.image_url || sparklersCategory,
+      //   icon: Star, // You can map different icons based on category
+      //   description: cat.description || `Premium ${cat.name} for celebrations`,
+      //   path: `/products?category=${cat.name}`,
+      // })));
+    } catch (error) {
+      console.error('Error loading categories:', error);
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -99,7 +129,7 @@ const HomePage = () => {
             {categories.map((category) => {
               const IconComponent = category.icon;
               return (
-                <Card key={category.name} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
+                <Card key={category.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
                   <CardContent className="p-0">
                     <div className="relative overflow-hidden rounded-t-lg">
                       <img

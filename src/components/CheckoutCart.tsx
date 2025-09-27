@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,23 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { X, Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Import product images
-import sparkler10cmElectric from "@/assets/sparkler-10cm-electric.jpg";
-import sparkler10cmColor from "@/assets/sparkler-10cm-color.jpg";
-import sparkler12cmElectric from "@/assets/sparkler-12cm-electric.jpg";
-import sparkler15cmGreen from "@/assets/sparkler-15cm-green.jpg";
-import sparkler15cmRed from "@/assets/sparkler-15cm-red.jpg";
-
-interface Product {
-  id: number;
-  image: string;
-  name: string;
-  content: string;
-  originalPrice: number;
-  discountPrice: number;
-  category: string;
-}
+import { api, Product } from "@/lib/supabase";
 
 interface CartItem extends Product {
   quantity: number;
@@ -38,83 +23,10 @@ interface CustomerDetails {
   address: string;
 }
 
-const products: Product[] = [
-  {
-    id: 1,
-    image: sparkler10cmElectric,
-    name: "10 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 29.0,
-    discountPrice: 15.5,
-    category: "sparklers",
-  },
-  {
-    id: 2,
-    image: sparkler10cmColor,
-    name: "10 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 34.0,
-    discountPrice: 18.5,
-    category: "sparklers",
-  },
-  {
-    id: 3,
-    image: sparkler12cmElectric,
-    name: "12 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 42.0,
-    discountPrice: 19.0,
-    category: "sparklers",
-  },
-  {
-    id: 4,
-    image: sparkler12cmElectric,
-    name: "12 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 105.0,
-    discountPrice: 21.0,
-    category: "sparklers",
-  },
-  {
-    id: 5,
-    image: sparkler15cmGreen,
-    name: "15 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 150.0,
-    discountPrice: 30.0,
-    category: "sparklers",
-  },
-  {
-    id: 6,
-    image: sparkler15cmGreen,
-    name: "15 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 155.0,
-    discountPrice: 31.0,
-    category: "sparklers",
-  },
-  {
-    id: 7,
-    image: sparkler15cmGreen,
-    name: "15 Cm Green",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 190.0,
-    discountPrice: 38.0,
-    category: "sparklers",
-  },
-  {
-    id: 8,
-    image: sparkler15cmRed,
-    name: "15 Cm Red",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 205.0,
-    discountPrice: 41.0,
-    category: "sparklers",
-  },
-];
-
 const CheckoutCart = () => {
-  const [selectedProducts, setSelectedProducts] = useState<Record<number, number>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProducts, setSelectedProducts] = useState<Record<string, number>>({});
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
     name: "",
@@ -124,7 +36,28 @@ const CheckoutCart = () => {
   });
   const { toast } = useToast();
 
-  const updateQuantity = (productId: number, change: number) => {
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = (productId: string, change: number) => {
     setSelectedProducts(prev => {
       const current = prev[productId] || 0;
       const newQuantity = Math.max(0, current + change);
@@ -136,7 +69,7 @@ const CheckoutCart = () => {
     });
   };
 
-  const setQuantity = (productId: number, quantity: number) => {
+  const setQuantity = (productId: string, quantity: number) => {
     const numQuantity = Math.max(0, Math.floor(quantity));
     if (numQuantity === 0) {
       const { [productId]: removed, ...rest } = selectedProducts;
@@ -149,14 +82,14 @@ const CheckoutCart = () => {
   const getCartItems = (): CartItem[] => {
     return Object.entries(selectedProducts)
       .map(([productId, quantity]) => {
-        const product = products.find(p => p.id === parseInt(productId));
+        const product = products.find(p => p.id === productId);
         return product ? { ...product, quantity } : null;
       })
       .filter((item): item is CartItem => item !== null);
   };
 
   const getTotalPrice = () => {
-    return getCartItems().reduce((total, item) => total + (item.discountPrice * item.quantity), 0);
+    return getCartItems().reduce((total, item) => total + (item.discount_price * item.quantity), 0);
   };
 
   const getTotalItems = () => {
@@ -180,7 +113,7 @@ const CheckoutCart = () => {
     setIsCartOpen(true);
   };
 
-  const handleBookNow = () => {
+  const handleBookNow = async () => {
     const cartItems = getCartItems();
     if (cartItems.length === 0) {
       toast({
@@ -200,20 +133,81 @@ const CheckoutCart = () => {
       return;
     }
 
-    toast({
-      title: "Booking confirmed! 🎆",
-      description: `Your order for ${getTotalItems()} items worth ₹${getTotalPrice().toFixed(2)} has been placed successfully!`,
-    });
+    try {
+      // Create or get customer
+      let customer = await api.getCustomerByEmail(customerDetails.email);
+      if (!customer) {
+        customer = await api.createCustomer({
+          name: customerDetails.name,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+        });
+      }
 
-    // Reset form
-    setSelectedProducts({});
-    setCustomerDetails({ name: "", email: "", phone: "", address: "" });
-    setIsCartOpen(false);
+      // Create order
+      const order = await api.createOrder({
+        customer_id: customer.id,
+        total_amount: getTotalPrice(),
+        status: 'pending',
+      });
+
+      // Create order items
+      const orderItems = cartItems.map(item => ({
+        order_id: order.id,
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.discount_price,
+        total_price: item.discount_price * item.quantity,
+      }));
+
+      await api.createOrderItems(orderItems);
+
+      // Update stock quantities
+      for (const item of cartItems) {
+        const newStock = item.stock_quantity - item.quantity;
+        await api.updateProductStock(item.id, Math.max(0, newStock));
+      }
+
+      toast({
+        title: "Order confirmed! 🎆",
+        description: `Your order #${order.id.slice(0, 8)} for ${getTotalItems()} items worth ₹${getTotalPrice().toFixed(2)} has been placed successfully!`,
+      });
+
+      // Reset form
+      setSelectedProducts({});
+      setCustomerDetails({ name: "", email: "", phone: "", address: "" });
+      setIsCartOpen(false);
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Order failed",
+        description: "There was an error processing your order. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleInputChange = (field: keyof CustomerDetails, value: string) => {
     setCustomerDetails(prev => ({ ...prev, [field]: value }));
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4">
+          <div className="mb-8">
+            <div className="bg-discount text-discount-foreground p-4 rounded-lg mb-6 text-center">
+              <h2 className="text-2xl font-bold">SPARKLERS (80% DISCOUNT)</h2>
+            </div>
+          </div>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background py-8">
@@ -228,7 +222,7 @@ const CheckoutCart = () => {
         {/* Mobile Card View */}
         <div className="block md:hidden space-y-4 mb-8">
           {products.map((product) => {
-            const discount = calculateDiscount(product.originalPrice, product.discountPrice);
+            const discount = calculateDiscount(product.original_price, product.discount_price);
             const quantity = selectedProducts[product.id] || 0;
             
             return (
@@ -236,7 +230,7 @@ const CheckoutCart = () => {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <img
-                      src={product.image}
+                      src={product.image_url}
                       alt={product.name}
                       className="w-20 h-20 object-cover rounded-md flex-shrink-0"
                     />
@@ -246,8 +240,8 @@ const CheckoutCart = () => {
                       <p className="text-xs text-muted-foreground mb-2">{product.content}</p>
                       
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="price-original text-xs">₹{product.originalPrice}</span>
-                        <span className="price-current text-sm">₹{product.discountPrice}</span>
+                        <span className="price-original text-xs">₹{product.original_price}</span>
+                        <span className="price-current text-sm">₹{product.discount_price}</span>
                         <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
                       </div>
                       
@@ -302,14 +296,14 @@ const CheckoutCart = () => {
             </thead>
             <tbody>
               {products.map((product, index) => {
-                const discount = calculateDiscount(product.originalPrice, product.discountPrice);
+                const discount = calculateDiscount(product.original_price, product.discount_price);
                 const quantity = selectedProducts[product.id] || 0;
                 
                 return (
                   <tr key={product.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                     <td className="border border-border p-3">
                       <img
-                        src={product.image}
+                        src={product.image_url}
                         alt={product.name}
                         className="w-16 h-16 object-cover rounded-md"
                       />
@@ -325,13 +319,13 @@ const CheckoutCart = () => {
                     
                     <td className="border border-border p-3">
                       <div className="flex items-center gap-2">
-                        <span className="price-original">₹{product.originalPrice}</span>
+                        <span className="price-original">₹{product.original_price}</span>
                         <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
                       </div>
                     </td>
                     
                     <td className="border border-border p-3">
-                      <span className="price-current">₹{product.discountPrice}</span>
+                      <span className="price-current">₹{product.discount_price}</span>
                     </td>
                     
                     <td className="border border-border p-3">
@@ -366,7 +360,7 @@ const CheckoutCart = () => {
                     
                     <td className="border border-border p-3">
                       <span className="text-lg font-bold text-primary">
-                        ₹{(product.discountPrice * quantity).toFixed(2)}
+                        ₹{(product.discount_price * quantity).toFixed(2)}
                       </span>
                     </td>
                   </tr>
@@ -407,7 +401,7 @@ const CheckoutCart = () => {
                     <Card key={item.id} className="p-4">
                       <div className="flex gap-3">
                         <img
-                          src={item.image}
+                          src={item.image_url}
                           alt={item.name}
                           className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                         />
@@ -436,7 +430,7 @@ const CheckoutCart = () => {
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-bold text-primary">
-                                ₹{(item.discountPrice * item.quantity).toFixed(2)}
+                                ₹{(item.discount_price * item.quantity).toFixed(2)}
                               </p>
                             </div>
                           </div>

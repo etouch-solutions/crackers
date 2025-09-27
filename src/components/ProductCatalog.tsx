@@ -1,108 +1,41 @@
 import { useState, useMemo } from "react";
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-
-// Import product images
-import sparkler10cmElectric from "@/assets/sparkler-10cm-electric.jpg";
-import sparkler10cmColor from "@/assets/sparkler-10cm-color.jpg";
-import sparkler12cmElectric from "@/assets/sparkler-12cm-electric.jpg";
-import sparkler15cmGreen from "@/assets/sparkler-15cm-green.jpg";
-import sparkler15cmRed from "@/assets/sparkler-15cm-red.jpg";
-
-interface Product {
-  id: number;
-  image: string;
-  name: string;
-  content: string;
-  originalPrice: number;
-  discountPrice: number;
-  category: string;
-}
-
-const products: Product[] = [
-  {
-    id: 1,
-    image: sparkler10cmElectric,
-    name: "10 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 29.0,
-    discountPrice: 15.5,
-    category: "sparklers",
-  },
-  {
-    id: 2,
-    image: sparkler10cmColor,
-    name: "10 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 34.0,
-    discountPrice: 18.5,
-    category: "sparklers",
-  },
-  {
-    id: 3,
-    image: sparkler12cmElectric,
-    name: "12 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 42.0,
-    discountPrice: 19.0,
-    category: "sparklers",
-  },
-  {
-    id: 4,
-    image: sparkler12cmElectric,
-    name: "12 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 105.0,
-    discountPrice: 21.0,
-    category: "sparklers",
-  },
-  {
-    id: 5,
-    image: sparkler15cmGreen,
-    name: "15 Cm Electric",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 150.0,
-    discountPrice: 30.0,
-    category: "sparklers",
-  },
-  {
-    id: 6,
-    image: sparkler15cmGreen,
-    name: "15 Cm Colour",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 155.0,
-    discountPrice: 31.0,
-    category: "sparklers",
-  },
-  {
-    id: 7,
-    image: sparkler15cmGreen,
-    name: "15 Cm Green",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 190.0,
-    discountPrice: 38.0,
-    category: "sparklers",
-  },
-  {
-    id: 8,
-    image: sparkler15cmRed,
-    name: "15 Cm Red",
-    content: "1 Box (10 Pcs)",
-    originalPrice: 205.0,
-    discountPrice: 41.0,
-    category: "sparklers",
-  },
-];
+import { api, Product } from "@/lib/supabase";
 
 const ProductCatalog = () => {
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
   const { toast } = useToast();
 
-  const updateQuantity = (productId: number, change: number) => {
+  useEffect(() => {
+    loadProducts();
+  }, []);
+
+  const loadProducts = async () => {
+    try {
+      setLoading(true);
+      const data = await api.getProducts();
+      setProducts(data);
+    } catch (error) {
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateQuantity = (productId: string, change: number) => {
     setQuantities(prev => {
       const current = prev[productId] || 0;
       const newQuantity = Math.max(0, current + change);
@@ -110,14 +43,14 @@ const ProductCatalog = () => {
     });
   };
 
-  const setQuantity = (productId: number, quantity: number) => {
+  const setQuantity = (productId: string, quantity: number) => {
     const numQuantity = Math.max(0, Math.floor(quantity));
     setQuantities(prev => ({ ...prev, [productId]: numQuantity }));
   };
 
   const calculateTotal = (product: Product) => {
     const qty = quantities[product.id] || 0;
-    return (product.discountPrice * qty).toFixed(2);
+    return (product.discount_price * qty).toFixed(2);
   };
 
   const calculateDiscount = (originalPrice: number, discountPrice: number) => {
@@ -144,6 +77,23 @@ const ProductCatalog = () => {
     console.log(`Added ${quantity}x ${product.name} to cart`);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background py-8">
+        <div className="container mx-auto px-4">
+          <div className="mb-8">
+            <div className="bg-discount text-discount-foreground p-4 rounded-lg mb-6 text-center">
+              <h2 className="text-2xl font-bold">SPARKLERS (80% DISCOUNT)</h2>
+            </div>
+          </div>
+          <div className="text-center py-8">
+            <p className="text-muted-foreground">Loading products...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4">
@@ -157,7 +107,7 @@ const ProductCatalog = () => {
         {/* Mobile Card View */}
         <div className="block md:hidden space-y-4">
           {products.map((product) => {
-            const discount = calculateDiscount(product.originalPrice, product.discountPrice);
+            const discount = calculateDiscount(product.original_price, product.discount_price);
             const quantity = quantities[product.id] || 0;
             
             return (
@@ -165,7 +115,7 @@ const ProductCatalog = () => {
                 <CardContent className="p-4">
                   <div className="flex gap-4">
                     <img
-                      src={product.image}
+                      src={product.image_url}
                       alt={product.name}
                       className="w-20 h-20 object-cover rounded-md flex-shrink-0"
                     />
@@ -175,8 +125,8 @@ const ProductCatalog = () => {
                       <p className="text-xs text-muted-foreground mb-2">{product.content}</p>
                       
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="price-original text-xs">₹{product.originalPrice}</span>
-                        <span className="price-current text-sm">₹{product.discountPrice}</span>
+                        <span className="price-original text-xs">₹{product.original_price}</span>
+                        <span className="price-current text-sm">₹{product.discount_price}</span>
                         <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
                       </div>
                       
@@ -246,14 +196,14 @@ const ProductCatalog = () => {
             </thead>
             <tbody>
               {products.map((product, index) => {
-                const discount = calculateDiscount(product.originalPrice, product.discountPrice);
+                const discount = calculateDiscount(product.original_price, product.discount_price);
                 const quantity = quantities[product.id] || 0;
                 
                 return (
                   <tr key={product.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
                     <td className="border border-border p-3">
                       <img
-                        src={product.image}
+                        src={product.image_url}
                         alt={product.name}
                         className="w-16 h-16 object-cover rounded-md"
                       />
@@ -269,13 +219,13 @@ const ProductCatalog = () => {
                     
                     <td className="border border-border p-3">
                       <div className="flex items-center gap-2">
-                        <span className="price-original">₹{product.originalPrice}</span>
+                        <span className="price-original">₹{product.original_price}</span>
                         <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
                       </div>
                     </td>
                     
                     <td className="border border-border p-3">
-                      <span className="price-current">₹{product.discountPrice}</span>
+                      <span className="price-current">₹{product.discount_price}</span>
                     </td>
                     
                     <td className="border border-border p-3">
