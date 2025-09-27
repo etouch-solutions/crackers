@@ -1,0 +1,193 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fireworks E-commerce Design System - Green & White Theme */
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 140 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 140 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 140 20% 15%;
+
+    /* Fresh Green Primary Theme */
+    --primary: 140 70% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 140 75% 40%;
+    --primary-light: 140 60% 95%;
+
+    /* Secondary Green Shades */
+    --secondary: 140 30% 95%;
+    --secondary-foreground: 140 20% 15%;
+
+    --muted: 140 15% 96%;
+    --muted-foreground: 140 10% 45%;
+
+    --accent: 140 50% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Success & Warning Colors */
+    --success: 140 70% 45%;
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 45 85% 55%;
+    --warning-foreground: 0 0% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders & Inputs */
+    --border: 140 20% 90%;
+    --input: 140 20% 95%;
+    --ring: 140 70% 45%;
+
+    /* Discount & Pricing Colors */
+    --discount: 0 85% 55%;
+    --discount-foreground: 0 0% 100%;
+    --original-price: 140 10% 60%;
+
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(140 70% 45%), hsl(140 60% 55%));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(140 15% 98%));
+    --gradient-discount: linear-gradient(135deg, hsl(0 85% 55%), hsl(15 90% 60%));
+
+    /* Shadows */
+    --shadow-card: 0 4px 6px -1px hsl(140 70% 45% / 0.1), 0 2px 4px -1px hsl(140 70% 45% / 0.06);
+    --shadow-hover: 0 10px 15px -3px hsl(140 70% 45% / 0.1), 0 4px 6px -2px hsl(140 70% 45% / 0.05);
+    --shadow-discount: 0 8px 25px -5px hsl(0 85% 55% / 0.3);
+
+    /* Animations */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 98%;
+
+    --sidebar-foreground: 240 5.3% 26.1%;
+
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 140 15% 5%;
+    --foreground: 140 30% 95%;
+
+    --card: 140 20% 8%;
+    --card-foreground: 140 30% 95%;
+
+    --popover: 140 20% 8%;
+    --popover-foreground: 140 30% 95%;
+
+    --primary: 140 70% 50%;
+    --primary-foreground: 140 15% 5%;
+    --primary-hover: 140 75% 45%;
+    --primary-light: 140 50% 15%;
+
+    --secondary: 140 15% 12%;
+    --secondary-foreground: 140 30% 90%;
+
+    --muted: 140 10% 10%;
+    --muted-foreground: 140 20% 65%;
+
+    --accent: 140 60% 55%;
+    --accent-foreground: 140 15% 5%;
+
+    --success: 140 70% 50%;
+    --success-foreground: 140 15% 5%;
+    
+    --warning: 45 85% 60%;
+    --warning-foreground: 140 15% 5%;
+
+    --destructive: 0 84% 65%;
+    --destructive-foreground: 140 15% 5%;
+
+    --border: 140 20% 20%;
+    --input: 140 20% 15%;
+    --ring: 140 70% 50%;
+
+    --discount: 0 85% 60%;
+    --discount-foreground: 140 15% 5%;
+    --original-price: 140 20% 50%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(140 70% 45%), hsl(140 60% 55%));
+    --gradient-card: linear-gradient(145deg, hsl(140 20% 8%), hsl(140 15% 10%));
+    --gradient-discount: linear-gradient(135deg, hsl(0 85% 55%), hsl(15 90% 60%));
+
+    --shadow-card: 0 4px 6px -1px hsl(140 70% 45% / 0.2), 0 2px 4px -1px hsl(140 70% 45% / 0.1);
+    --shadow-hover: 0 10px 15px -3px hsl(140 70% 45% / 0.2), 0 4px 6px -2px hsl(140 70% 45% / 0.1);
+    --shadow-discount: 0 8px 25px -5px hsl(0 85% 55% / 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1 {
+    @apply text-4xl font-bold tracking-tight;
+  }
+
+  h2 {
+    @apply text-3xl font-semibold tracking-tight;
+  }
+
+  h3 {
+    @apply text-2xl font-semibold tracking-tight;
+  }
+}
+
+@layer components {
+  /* E-commerce specific utility classes */
+  .btn-hero {
+    @apply bg-gradient-to-r from-primary to-accent text-primary-foreground px-8 py-3 rounded-lg font-semibold shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105;
+  }
+
+  .btn-discount {
+    @apply bg-gradient-to-r from-discount to-red-500 text-discount-foreground px-6 py-2 rounded-lg font-bold shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .card-product {
+    @apply bg-card border border-border rounded-lg shadow-sm hover:shadow-md transition-all duration-300;
+  }
+
+  .badge-discount {
+    @apply bg-discount text-discount-foreground px-2 py-1 rounded-md text-sm font-bold;
+  }
+
+  .price-original {
+    @apply text-muted-foreground line-through text-sm;
+  }
+
+  .price-current {
+    @apply text-primary font-bold text-lg;
+  }
+
+  .table-header {
+    @apply bg-primary text-primary-foreground font-semibold;
+  }
+
+  .input-quantity {
+    @apply w-16 px-2 py-1 border border-border rounded text-center focus:ring-2 focus:ring-primary focus:border-transparent;
+  }
+}
