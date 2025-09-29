@@ -80,6 +80,51 @@ export const api = {
     return data || [];
   },
 
+  async getAllProducts(): Promise<Product[]> {
+    const { data, error } = await supabase
+      .from('products')
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async createProduct(product: Omit<Product, 'id' | 'created_at' | 'category'>): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .insert(product)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async deleteProduct(id: string): Promise<void> {
+    const { error } = await supabase
+      .from('products')
+      .delete()
+      .eq('id', id);
+
+    if (error) throw error;
+  },
+
   async getProductById(id: string): Promise<Product | null> {
     const { data, error } = await supabase
       .from('products')
@@ -134,6 +179,35 @@ export const api = {
     const { data, error } = await supabase
       .from('orders')
       .insert(order)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
+  async getAllOrders(): Promise<Order[]> {
+    const { data, error } = await supabase
+      .from('orders')
+      .select(`
+        *,
+        customer:customers(*),
+        order_items:order_items(
+          *,
+          product:products(*)
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data || [];
+  },
+
+  async updateOrderStatus(id: string, status: Order['status']): Promise<Order> {
+    const { data, error } = await supabase
+      .from('orders')
+      .update({ status })
+      .eq('id', id)
       .select()
       .single();
 

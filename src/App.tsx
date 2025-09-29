@@ -7,6 +7,7 @@ import Navigation from "./components/Navigation";
 import HomePage from "./components/HomePage";
 import CheckoutCart from "./components/CheckoutCart";
 import Cart from "./components/Cart";
+import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -18,11 +19,21 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <div className="min-h-screen bg-background">
-          <Navigation cartItemCount={3} />
           <Routes>
             <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={<CheckoutCart />} />
-            <Route path="/cart" element={<Cart />} />
+            <Route path="/products" element={
+              <>
+                <Navigation cartItemCount={3} />
+                <CheckoutCart />
+              </>
+            } />
+            <Route path="/cart" element={
+              <>
+                <Navigation cartItemCount={3} />
+                <Cart />
+              </>
+            } />
+            <Route path="/admin" element={<AdminDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

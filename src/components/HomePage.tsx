@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ArrowRight, Star, Zap, Gift, Flower } from "lucide-react";
 import { api, Category } from "@/lib/supabase";
+import Navigation from "./Navigation";
 
 // Import images
 import heroBanner from "@/assets/hero-banner.jpg";
@@ -74,7 +75,9 @@ const HomePage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <>
+      <Navigation cartItemCount={3} />
+      <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
         <div 
@@ -201,7 +204,8 @@ const HomePage = () => {
           </div>
         </div>
       </section>
-    </div>
+      </div>
+    </>
   );
 };
 
