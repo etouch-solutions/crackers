@@ -1,15 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { 
-  Package, 
-  ShoppingCart, 
-  BarChart3, 
-  Menu, 
-  X,
-  Sparkles,
-  LogOut
-} from "lucide-react";
+import { Package, ShoppingCart, ChartBar as BarChart3, Menu, X, Sparkles, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
