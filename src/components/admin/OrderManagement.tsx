@@ -213,23 +213,26 @@ const OrderManagement = ({ onStatsUpdate }: OrderManagementProps) => {
                       <span className="font-medium">₹{order.total_amount.toFixed(2)}</span>
                     </TableCell>
                     <TableCell>
-                      <Select
-                        value={order.status}
-                        onValueChange={(value) => handleStatusUpdate(order.id, value)}
-                      >
-                        <SelectTrigger className="w-32">
-                          <Badge className={statusColors[order.status as keyof typeof statusColors]}>
-                            {order.status}
-                          </Badge>
-                        </SelectTrigger>
-                        <SelectContent>
-                          {statusOptions.slice(1).map((option) => (
-                            <SelectItem key={option.value} value={option.value}>
-                              {option.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="flex flex-col gap-2">
+                        <Badge className={statusColors[order.status as keyof typeof statusColors]}>
+                          {order.status}
+                        </Badge>
+                        <Select
+                          value={order.status}
+                          onValueChange={(value) => handleStatusUpdate(order.id, value)}
+                        >
+                          <SelectTrigger className="w-32 h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {statusOptions.slice(1).map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
                     </TableCell>
                     <TableCell>
                       {format(new Date(order.created_at), "MMM dd, yyyy")}

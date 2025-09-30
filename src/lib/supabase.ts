@@ -96,7 +96,7 @@ export const api = {
   async createProduct(product: Omit<Product, 'id' | 'created_at' | 'category'>): Promise<Product> {
     const { data, error } = await supabase
       .from('products')
-      .insert(product)
+      .insert([product])
       .select()
       .single();
 

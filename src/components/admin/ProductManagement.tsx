@@ -90,17 +90,19 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         return;
       }
 
-      await api.createProduct({
-        name: formData.name,
-        description: formData.description || null,
-        content: formData.content,
-        image_url: formData.image_url || "https://images.pexels.com/photos/1387174/pexels-photo-1387174.jpeg",
+      const productData = {
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        content: formData.content.trim(),
+        image_url: formData.image_url?.trim() || "https://images.pexels.com/photos/1387174/pexels-photo-1387174.jpeg",
         original_price: parseFloat(formData.original_price),
         discount_price: parseFloat(formData.discount_price),
         category_id: formData.category_id || null,
         stock_quantity: parseInt(formData.stock_quantity) || 0,
         is_active: true,
-      });
+      };
+
+      await api.createProduct(productData);
 
       toast({
         title: "Success",
@@ -125,16 +127,18 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
     if (!editingProduct) return;
 
     try {
-      await api.updateProduct(editingProduct.id, {
-        name: formData.name,
-        description: formData.description || null,
-        content: formData.content,
-        image_url: formData.image_url,
+      const updateData = {
+        name: formData.name.trim(),
+        description: formData.description?.trim() || null,
+        content: formData.content.trim(),
+        image_url: formData.image_url?.trim() || editingProduct.image_url,
         original_price: parseFloat(formData.original_price),
         discount_price: parseFloat(formData.discount_price),
         category_id: formData.category_id || null,
-        stock_quantity: parseInt(formData.stock_quantity),
-      });
+        stock_quantity: parseInt(formData.stock_quantity) || 0,
+      };
+
+      await api.updateProduct(editingProduct.id, updateData);
 
       toast({
         title: "Success",
