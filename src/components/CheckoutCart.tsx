@@ -88,6 +88,26 @@ const CheckoutCart = () => {
     return Object.values(localQuantities).reduce((total, quantity) => total + quantity, 0);
   };
 
+  const getLocalTotalPrice = () => {
+    return Object.entries(localQuantities).reduce((total, [productId, quantity]) => {
+      const product = products.find(p => p.id === productId);
+      return total + (product ? product.discount_price * quantity : 0);
+    }, 0);
+  };
+
+  const getLocalCategoriesCount = () => {
+    const selectedCategories = new Set();
+    Object.entries(localQuantities).forEach(([productId, quantity]) => {
+      if (quantity > 0) {
+        const product = products.find(p => p.id === productId);
+        if (product && product.category) {
+          selectedCategories.add(product.category.name);
+        }
+      }
+    });
+    return selectedCategories.size;
+  };
+
   const calculateDiscount = (originalPrice: number, discountPrice: number) => {
     return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
   };
