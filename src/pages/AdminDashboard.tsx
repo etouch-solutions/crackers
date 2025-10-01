@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, ShoppingCart, DollarSign, Users } from "lucide-react";
 import ProductManagement from "@/components/admin/ProductManagement";
 import OrderManagement from "@/components/admin/OrderManagement";
+import CategoryManagement from "@/components/admin/CategoryManagement";
 import AdminSidebar from "@/components/admin/AdminSidebar";
 import { api } from "@/lib/supabase";
 
@@ -149,6 +150,10 @@ const AdminDashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              <TabsContent value="categories">
+                <CategoryManagement onStatsUpdate={loadStats} />
               </TabsContent>
 
               <TabsContent value="products">

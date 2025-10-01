@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Package, ShoppingCart, ChartBar as BarChart3, Menu, X, Sparkles, LogOut } from "lucide-react";
+import { Package, ShoppingCart, ChartBar as BarChart3, Menu, X, Sparkles, LogOut, Layers } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AdminSidebarProps {
@@ -17,6 +17,12 @@ const AdminSidebar = ({ activeTab, onTabChange }: AdminSidebarProps) => {
       id: "overview",
       label: "Overview",
       icon: BarChart3,
+      badge: null,
+    },
+    {
+      id: "categories",
+      label: "Categories",
+      icon: Layers,
       badge: null,
     },
     {
