@@ -312,8 +312,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Category</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{category.name}"? This action cannot be undone.
-                                Products in this category will become uncategorized.
+                                Are you sure you want to delete "{category.name}"? This action cannot be undone and will uncategorize all products in this category.
                               </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>

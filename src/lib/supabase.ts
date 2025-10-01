@@ -223,10 +223,23 @@ export const api = {
   },
 
   async deleteCategory(id: string): Promise<void> {
+    // First, uncategorize all products that reference this category
+    await this.uncategorizeProductsByCategory(id);
+    
+    // Then delete the category
     const { error } = await supabase
       .from('categories')
       .delete()
       .eq('id', id);
+
+    if (error) throw error;
+  },
+
+  async uncategorizeProductsByCategory(categoryId: string): Promise<void> {
+    const { error } = await supabase
+      .from('products')
+      .update({ category_id: null })
+      .eq('category_id', categoryId);
 
     if (error) throw error;
   },
