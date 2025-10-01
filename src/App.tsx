@@ -8,6 +8,7 @@ import HomePage from "./components/HomePage";
 import CheckoutCart from "./components/CheckoutCart";
 import Cart from "./components/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
+import Orders from "./pages/Orders";
 import NotFound from "./pages/NotFound";
 import { CartProvider } from "./contexts/CartContext";
 
@@ -36,6 +37,14 @@ const App = () => (
                   <Navigation />
                   <div className="min-h-screen">
                     <Cart />
+                  </div>
+                </>
+              } />
+              <Route path="/orders" element={
+                <>
+                  <Navigation />
+                  <div className="min-h-screen">
+                    <Orders />
                   </div>
                 </>
               } />

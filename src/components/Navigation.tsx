@@ -1,18 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { ShoppingCart, Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useCart } from "@/contexts/CartContext";
+import { supabase } from "@/lib/supabase";
 
 interface NavigationProps {}
 
 const Navigation = ({}: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [orderCount, setOrderCount] = useState(0);
   const location = useLocation();
-  const { getTotalItems } = useCart();
-  
-  const cartItemCount = getTotalItems();
+
+  useEffect(() => {
+    fetchOrderCount();
+
+    const subscription = supabase
+      .channel('orders_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        fetchOrderCount();
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  const fetchOrderCount = async () => {
+    try {
+      const { count, error } = await supabase
+        .from('orders')
+        .select('*', { count: 'exact', head: true });
+
+      if (error) throw error;
+      setOrderCount(count || 0);
+    } catch (error) {
+      console.error('Error fetching order count:', error);
+    }
+  };
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -48,14 +74,14 @@ const Navigation = ({}: NavigationProps) => {
             ))}
           </nav>
 
-          {/* Cart and Mobile Menu Button */}
+          {/* Orders and Mobile Menu Button */}
           <div className="flex items-center space-x-4">
             <Button variant="outline" size="icon" asChild className="relative">
-              <Link to="/cart" aria-label="View Cart">
+              <Link to="/orders" aria-label="View Orders">
                 <ShoppingCart className="h-4 w-4" />
-                {cartItemCount > 0 && (
+                {orderCount > 0 && (
                   <Badge className="absolute -top-2 -right-2 bg-discount text-discount-foreground min-w-[20px] h-5 text-xs flex items-center justify-center rounded-full">
-                    {cartItemCount}
+                    {orderCount}
                   </Badge>
                 )}
               </Link>
