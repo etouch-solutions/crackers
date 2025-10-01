@@ -180,6 +180,9 @@ const CheckoutCart = () => {
       
       // Reload products to refresh stock quantities
       await loadProducts();
+      
+      // Force a page refresh to ensure clean state
+      window.location.reload();
     } catch (error) {
       console.error('Error creating order:', error);
       toast({

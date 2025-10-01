@@ -50,16 +50,16 @@ const Navigation = ({}: NavigationProps) => {
 
           {/* Cart and Mobile Menu Button */}
           <div className="flex items-center space-x-4">
-            <Link to="/cart" className="relative" aria-label="View Cart">
-              <Button variant="outline" size="icon">
+            <Button variant="outline" size="icon" asChild className="relative">
+              <Link to="/cart" aria-label="View Cart">
                 <ShoppingCart className="h-4 w-4" />
                 {cartItemCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-discount text-discount-foreground min-w-[20px] h-5 text-xs flex items-center justify-center">
+                  <Badge className="absolute -top-2 -right-2 bg-discount text-discount-foreground min-w-[20px] h-5 text-xs flex items-center justify-center rounded-full">
                     {cartItemCount}
                   </Badge>
                 )}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
 
             {/* Mobile Menu Button */}
             <Button
