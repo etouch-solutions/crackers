@@ -261,10 +261,10 @@ export const api = {
       .from('customers')
       .select('*')
       .eq('email', email)
-      .single();
+      .limit(1);
 
-    if (error && error.code !== 'PGRST116') throw error;
-    return data;
+    if (error) throw error;
+    return data && data.length > 0 ? data[0] : null;
   },
 
   // Orders
