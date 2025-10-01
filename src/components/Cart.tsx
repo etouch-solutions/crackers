@@ -222,7 +222,7 @@ const Cart = () => {
           </div>
         </div>
       </div>
-      <Navigation />
+    </div>
   );
 };
 
