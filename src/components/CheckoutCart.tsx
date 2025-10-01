@@ -175,7 +175,11 @@ const CheckoutCart = () => {
 
       clearCart();
       setCustomerDetails({ name: "", email: "", phone: "", address: "" });
+      setLocalQuantities({});
       setIsCartOpen(false);
+      
+      // Reload products to refresh stock quantities
+      await loadProducts();
     } catch (error) {
       console.error('Error creating order:', error);
       toast({

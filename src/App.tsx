@@ -26,13 +26,17 @@ const App = () => (
               <Route path="/products" element={
                 <>
                   <Navigation />
-                  <CheckoutCart />
+                  <div className="min-h-screen">
+                    <CheckoutCart />
+                  </div>
                 </>
               } />
               <Route path="/cart" element={
                 <>
                   <Navigation />
-                  <Cart />
+                  <div className="min-h-screen">
+                    <Cart />
+                  </div>
                 </>
               } />
               <Route path="/admin" element={<AdminDashboard />} />
