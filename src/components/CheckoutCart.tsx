@@ -551,7 +551,13 @@ const CheckoutCart = () => {
         </div>
       </div>
       {/* Footer Navigation */}
-      <StickyCartBar />
+      <StickyCartBar 
+        localQuantities={localQuantities}
+        products={products}
+        getLocalTotalItems={getLocalTotalItems}
+        getLocalTotalPrice={getLocalTotalPrice}
+        getLocalCategoriesCount={getLocalCategoriesCount}
+      />
     </>
   );
 };

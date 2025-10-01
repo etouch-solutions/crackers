@@ -2,13 +2,31 @@ import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Package, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Product } from '@/lib/supabase';
 
-const StickyCartBar = () => {
+interface StickyCartBarProps {
+  localQuantities?: Record<string, number>;
+  products?: Product[];
+  getLocalTotalItems?: () => number;
+  getLocalTotalPrice?: () => number;
+  getLocalCategoriesCount?: () => number;
+}
+
+const StickyCartBar = ({ 
+  localQuantities = {}, 
+  products = [], 
+  getLocalTotalItems, 
+  getLocalTotalPrice, 
+  getLocalCategoriesCount 
+}: StickyCartBarProps) => {
   const { getTotalPrice, getTotalItems, getSelectedCategoriesCount } = useCart();
 
-  const totalPrice = getTotalPrice();
-  const totalItems = getTotalItems();
-  const categoriesCount = getSelectedCategoriesCount();
+  // Use local selection data if available, otherwise use cart data
+  const hasLocalSelections = Object.keys(localQuantities).length > 0 && getLocalTotalItems && getLocalTotalPrice && getLocalCategoriesCount;
+  
+  const totalPrice = hasLocalSelections ? getLocalTotalPrice() : getTotalPrice();
+  const totalItems = hasLocalSelections ? getLocalTotalItems() : getTotalItems();
+  const categoriesCount = hasLocalSelections ? getLocalCategoriesCount() : getSelectedCategoriesCount();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground shadow-lg z-50 border-t-4 border-primary-foreground/20 min-h-[80px]">
@@ -44,7 +62,7 @@ const StickyCartBar = () => {
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <p className="text-xs opacity-90">Grand Total</p>
+              <p className="text-xs opacity-90">{hasLocalSelections ? 'Selected Total' : 'Grand Total'}</p>
               <p className="text-lg font-bold">
                 {totalPrice > 0 ? `₹${totalPrice.toFixed(2)}` : '₹0.00'}
               </p>
@@ -57,7 +75,7 @@ const StickyCartBar = () => {
               disabled={totalItems === 0}
             >
               <Link to="/cart">
-                {totalItems > 0 ? 'View Cart' : 'Cart Empty'}
+                {totalItems > 0 ? (hasLocalSelections ? 'Add to Cart' : 'View Cart') : 'Cart Empty'}
               </Link>
             </Button>
           </div>
