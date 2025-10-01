@@ -12,6 +12,7 @@ import { X, Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product } from "@/lib/supabase";
 import StickyCartBar from "@/components/StickyCartBar";
+import { useCart } from "@/contexts/CartContext";
 
 interface CartItem extends Product {
   quantity: number;
@@ -27,7 +28,7 @@ interface CustomerDetails {
 const CheckoutCart = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedProducts, setSelectedProducts] = useState<Record<string, number>>({});
+  const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
     name: "",
@@ -36,6 +37,7 @@ const CheckoutCart = () => {
     address: "",
   });
   const { toast } = useToast();
+  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart } = useCart();
 
   useEffect(() => {
     loadProducts();
@@ -58,8 +60,8 @@ const CheckoutCart = () => {
     }
   };
 
-  const updateQuantity = (productId: string, change: number) => {
-    setSelectedProducts(prev => {
+  const updateLocalQuantity = (productId: string, change: number) => {
+    setLocalQuantities(prev => {
       const current = prev[productId] || 0;
       const newQuantity = Math.max(0, current + change);
       if (newQuantity === 0) {
@@ -70,31 +72,18 @@ const CheckoutCart = () => {
     });
   };
 
-  const setQuantity = (productId: string, quantity: number) => {
+  const setLocalQuantity = (productId: string, quantity: number) => {
     const numQuantity = Math.max(0, Math.floor(quantity));
     if (numQuantity === 0) {
-      const { [productId]: removed, ...rest } = selectedProducts;
-      setSelectedProducts(rest);
+      const { [productId]: removed, ...rest } = localQuantities;
+      setLocalQuantities(rest);
     } else {
-      setSelectedProducts(prev => ({ ...prev, [productId]: numQuantity }));
+      setLocalQuantities(prev => ({ ...prev, [productId]: numQuantity }));
     }
   };
 
-  const getCartItems = (): CartItem[] => {
-    return Object.entries(selectedProducts)
-      .map(([productId, quantity]) => {
-        const product = products.find(p => p.id === productId);
-        return product ? { ...product, quantity } : null;
-      })
-      .filter((item): item is CartItem => item !== null);
-  };
-
-  const getTotalPrice = () => {
-    return getCartItems().reduce((total, item) => total + (item.discount_price * item.quantity), 0);
-  };
-
-  const getTotalItems = () => {
-    return Object.values(selectedProducts).reduce((total, quantity) => total + quantity, 0);
+  const getLocalTotalItems = () => {
+    return Object.values(localQuantities).reduce((total, quantity) => total + quantity, 0);
   };
 
   const calculateDiscount = (originalPrice: number, discountPrice: number) => {
@@ -102,7 +91,7 @@ const CheckoutCart = () => {
   };
 
   const handleAddToCart = () => {
-    const totalItems = getTotalItems();
+    const totalItems = getLocalTotalItems();
     if (totalItems === 0) {
       toast({
         title: "No items selected",
@@ -111,11 +100,19 @@ const CheckoutCart = () => {
       });
       return;
     }
+
+    Object.entries(localQuantities).forEach(([productId, quantity]) => {
+      const product = products.find(p => p.id === productId);
+      if (product && quantity > 0) {
+        addToCart(product, quantity);
+      }
+    });
+
+    setLocalQuantities({});
     setIsCartOpen(true);
   };
 
   const handleBookNow = async () => {
-    const cartItems = getCartItems();
     if (cartItems.length === 0) {
       toast({
         title: "Cart is empty",
@@ -153,17 +150,17 @@ const CheckoutCart = () => {
 
       const orderItems = cartItems.map(item => ({
         order_id: order.id,
-        product_id: item.id,
+        product_id: item.product.id,
         quantity: item.quantity,
-        unit_price: item.discount_price,
-        total_price: item.discount_price * item.quantity,
+        unit_price: item.product.discount_price,
+        total_price: item.product.discount_price * item.quantity,
       }));
 
       await api.createOrderItems(orderItems);
 
       for (const item of cartItems) {
-        const newStock = item.stock_quantity - item.quantity;
-        await api.updateProductStock(item.id, Math.max(0, newStock));
+        const newStock = item.product.stock_quantity - item.quantity;
+        await api.updateProductStock(item.product.id, Math.max(0, newStock));
       }
 
       toast({
@@ -171,7 +168,7 @@ const CheckoutCart = () => {
         description: `Your order has been placed successfully!`,
       });
 
-      setSelectedProducts({});
+      clearCart();
       setCustomerDetails({ name: "", email: "", phone: "", address: "" });
       setIsCartOpen(false);
     } catch (error) {
@@ -225,7 +222,7 @@ const CheckoutCart = () => {
                 </h2>
                 {categoryProducts.map((product) => {
                   const discount = calculateDiscount(product.original_price, product.discount_price);
-                  const quantity = selectedProducts[product.id] || 0;
+                  const quantity = localQuantities[product.id] || 0;
 
                   return (
                     <Card key={product.id} className="card-product">
@@ -248,7 +245,7 @@ const CheckoutCart = () => {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateQuantity(product.id, -1)}
+                                onClick={() => updateLocalQuantity(product.id, -1)}
                                 className="h-6 w-6 p-0"
                               >
                                 <Minus className="h-3 w-3" />
@@ -256,14 +253,14 @@ const CheckoutCart = () => {
                               <Input
                                 type="number"
                                 value={quantity}
-                                onChange={(e) => setQuantity(product.id, parseInt(e.target.value) || 0)}
+                                onChange={(e) => setLocalQuantity(product.id, parseInt(e.target.value) || 0)}
                                 className="input-quantity h-6 w-12 text-xs"
                                 min="0"
                               />
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => updateQuantity(product.id, 1)}
+                                onClick={() => updateLocalQuantity(product.id, 1)}
                                 className="h-6 w-6 p-0"
                               >
                                 <Plus className="h-3 w-3" />
@@ -302,7 +299,7 @@ const CheckoutCart = () => {
                     <tbody>
                       {categoryProducts.map((product, index) => {
                         const discount = calculateDiscount(product.original_price, product.discount_price);
-                        const quantity = selectedProducts[product.id] || 0;
+                        const quantity = localQuantities[product.id] || 0;
 
                         return (
                           <tr key={product.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
@@ -333,7 +330,7 @@ const CheckoutCart = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => updateQuantity(product.id, -1)}
+                                  onClick={() => updateLocalQuantity(product.id, -1)}
                                   className="h-8 w-8 p-0"
                                 >
                                   <Minus className="h-4 w-4" />
@@ -341,14 +338,14 @@ const CheckoutCart = () => {
                                 <Input
                                   type="number"
                                   value={quantity}
-                                  onChange={(e) => setQuantity(product.id, parseInt(e.target.value) || 0)}
+                                  onChange={(e) => setLocalQuantity(product.id, parseInt(e.target.value) || 0)}
                                   className="input-quantity"
                                   min="0"
                                 />
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => updateQuantity(product.id, 1)}
+                                  onClick={() => updateLocalQuantity(product.id, 1)}
                                   className="h-8 w-8 p-0"
                                 >
                                   <Plus className="h-4 w-4" />
@@ -379,7 +376,7 @@ const CheckoutCart = () => {
               className="min-w-[200px]"
             >
               <ShoppingCart className="h-5 w-5 mr-2" />
-              Add to Cart ({getTotalItems()})
+              Add to Cart ({getLocalTotalItems()})
             </Button>
           </div>
 
@@ -394,25 +391,25 @@ const CheckoutCart = () => {
               </SheetHeader>
 
               <div className="mt-6 space-y-6">
-                {getCartItems().length > 0 ? (
+                {cartItems.length > 0 ? (
                   <div className="space-y-4">
-                    {getCartItems().map((item) => (
+                    {cartItems.map((item) => (
                       <Card key={item.id} className="p-4">
                         <div className="flex gap-3">
                           <img
-                            src={item.image_url}
-                            alt={item.name}
+                            src={item.product.image_url}
+                            alt={item.product.name}
                             className="w-16 h-16 object-cover rounded-md flex-shrink-0"
                           />
                           <div className="flex-1 min-w-0">
-                            <h4 className="font-medium text-sm">{item.name}</h4>
-                            <p className="text-xs text-muted-foreground">{item.content}</p>
+                            <h4 className="font-medium text-sm">{item.product.name}</h4>
+                            <p className="text-xs text-muted-foreground">{item.product.content}</p>
                             <div className="flex items-center justify-between mt-2">
                               <div className="flex items-center gap-2">
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => updateQuantity(item.id, -1)}
+                                  onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
                                   className="h-6 w-6 p-0"
                                 >
                                   <Minus className="h-3 w-3" />
@@ -421,7 +418,7 @@ const CheckoutCart = () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => updateQuantity(item.id, 1)}
+                                  onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
                                   className="h-6 w-6 p-0"
                                 >
                                   <Plus className="h-3 w-3" />
@@ -429,7 +426,7 @@ const CheckoutCart = () => {
                               </div>
                               <div className="text-right">
                                 <p className="text-sm font-bold text-primary">
-                                  ₹{(item.discount_price * item.quantity).toFixed(2)}
+                                  ₹{(item.product.discount_price * item.quantity).toFixed(2)}
                                 </p>
                               </div>
                             </div>
