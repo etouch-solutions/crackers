@@ -9,36 +9,39 @@ import CheckoutCart from "./components/CheckoutCart";
 import Cart from "./components/Cart";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFound from "./pages/NotFound";
+import { CartProvider } from "./contexts/CartContext";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <div className="min-h-screen bg-background">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/products" element={
-              <>
-                <Navigation cartItemCount={3} />
-                <CheckoutCart />
-              </>
-            } />
-            <Route path="/cart" element={
-              <>
-                <Navigation cartItemCount={3} />
-                <Cart />
-              </>
-            } />
-            <Route path="/admin" element={<AdminDashboard />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
-      </BrowserRouter>
+      <CartProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <div className="min-h-screen bg-background">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/products" element={
+                <>
+                  <Navigation cartItemCount={3} />
+                  <CheckoutCart />
+                </>
+              } />
+              <Route path="/cart" element={
+                <>
+                  <Navigation cartItemCount={3} />
+                  <Cart />
+                </>
+              } />
+              <Route path="/admin" element={<AdminDashboard />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+        </BrowserRouter>
+      </CartProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
