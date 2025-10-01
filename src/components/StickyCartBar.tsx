@@ -1,7 +1,5 @@
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Package, Layers } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Product } from '@/lib/supabase';
 
 interface StickyCartBarProps {
@@ -60,24 +58,11 @@ const StickyCartBar = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-xs opacity-90">{hasLocalSelections ? 'Selected Total' : 'Grand Total'}</p>
-              <p className="text-lg font-bold">
-                {totalPrice > 0 ? `₹${totalPrice.toFixed(2)}` : '₹0.00'}
-              </p>
-            </div>
-            <Button 
-              asChild 
-              variant="secondary" 
-              size="sm" 
-              className="bg-white text-primary hover:bg-white/90"
-              disabled={totalItems === 0}
-            >
-              <Link to="/cart">
-                {totalItems > 0 ? (hasLocalSelections ? 'Add to Cart' : 'View Cart') : 'Cart Empty'}
-              </Link>
-            </Button>
+          <div className="text-right">
+            <p className="text-xs opacity-90">{hasLocalSelections ? 'Selected Total' : 'Grand Total'}</p>
+            <p className="text-lg font-bold">
+              {totalPrice > 0 ? `₹${totalPrice.toFixed(2)}` : '₹0.00'}
+            </p>
           </div>
         </div>
       </div>
