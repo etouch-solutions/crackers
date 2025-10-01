@@ -231,6 +231,38 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
     }
   };
 
+  const handleActivateProduct = async (productId: string) => {
+    try {
+      setLoading(true);
+      
+      // Activate product
+      const activatedProduct = await api.activateProduct(productId);
+      
+      // Update local state
+      setProducts(prev => prev.map(p => p.id === productId ? activatedProduct : p));
+      
+      toast({
+        title: "Success",
+        description: "Product activated successfully!",
+      });
+      
+      onStatsUpdate();
+    } catch (error) {
+      console.error('Error activating product:', error);
+      
+      // If activation failed, reload data
+      await loadData();
+      
+      toast({
+        title: "Error",
+        description: "Failed to activate product. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openEditDialog = (product: Product) => {
     setEditingProduct(product);
     setFormData({
