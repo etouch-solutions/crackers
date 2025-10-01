@@ -49,7 +49,7 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
     try {
       setLoading(true);
       const [productsData, categoriesData] = await Promise.all([
-        api.getProducts(),
+        api.getAllProducts(), // Use getAllProducts to get all products including inactive ones
         api.getCategories(),
       ]);
       setProducts(productsData);
@@ -81,12 +81,25 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
 
   const handleAddProduct = async () => {
     try {
+      setLoading(true);
+      
       if (!formData.name || !formData.content || !formData.original_price || !formData.discount_price) {
         toast({
           title: "Validation Error",
           description: "Please fill in all required fields.",
           variant: "destructive",
         });
+        setLoading(false);
+        return;
+      }
+
+      if (parseFloat(formData.original_price) <= 0 || parseFloat(formData.discount_price) <= 0) {
+        toast({
+          title: "Validation Error",
+          description: "Prices must be greater than 0.",
+          variant: "destructive",
+        });
+        setLoading(false);
         return;
       }
 
@@ -102,7 +115,10 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         is_active: true,
       };
 
-      await api.createProduct(productData);
+      const newProduct = await api.createProduct(productData);
+      
+      // Add to local state immediately
+      setProducts(prev => [newProduct, ...prev]);
 
       toast({
         title: "Success",
@@ -111,7 +127,9 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
 
       setIsAddDialogOpen(false);
       resetForm();
-      loadData();
+      
+      // Reload data to ensure consistency
+      await loadData();
       onStatsUpdate();
     } catch (error) {
       console.error('Error adding product:', error);
@@ -120,6 +138,8 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         description: "Failed to add product. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -127,6 +147,18 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
     if (!editingProduct) return;
 
     try {
+      setLoading(true);
+      
+      if (!formData.name || !formData.content || !formData.original_price || !formData.discount_price) {
+        toast({
+          title: "Validation Error",
+          description: "Please fill in all required fields.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
       const updateData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
@@ -138,7 +170,10 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         stock_quantity: parseInt(formData.stock_quantity) || 0,
       };
 
-      await api.updateProduct(editingProduct.id, updateData);
+      const updatedProduct = await api.updateProduct(editingProduct.id, updateData);
+      
+      // Update local state immediately
+      setProducts(prev => prev.map(p => p.id === editingProduct.id ? updatedProduct : p));
 
       toast({
         title: "Success",
@@ -148,7 +183,9 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
       setIsEditDialogOpen(false);
       setEditingProduct(null);
       resetForm();
-      loadData();
+      
+      // Reload data to ensure consistency
+      await loadData();
       onStatsUpdate();
     } catch (error) {
       console.error('Error updating product:', error);
@@ -157,25 +194,40 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         description: "Failed to update product. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      await api.deleteProduct(productId);
+      setLoading(true);
+      
+      // Deactivate product instead of deleting
+      const deactivatedProduct = await api.deactivateProduct(productId);
+      
+      // Update local state
+      setProducts(prev => prev.map(p => p.id === productId ? deactivatedProduct : p));
+      
       toast({
         title: "Success",
-        description: "Product deleted successfully!",
+        description: "Product deactivated successfully!",
       });
-      loadData();
+      
       onStatsUpdate();
     } catch (error) {
-      console.error('Error deleting product:', error);
+      console.error('Error deactivating product:', error);
+      
+      // If deactivation failed, reload data
+      await loadData();
+      
       toast({
         title: "Error",
-        description: "Failed to delete product. Please try again.",
+        description: "Failed to deactivate product. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

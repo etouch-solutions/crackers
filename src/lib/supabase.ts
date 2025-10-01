@@ -105,24 +105,72 @@ export const api = {
   },
 
   async updateProduct(id: string, updates: Partial<Product>): Promise<Product> {
+    // Validate that product exists first
+    const { data: existingProduct, error: checkError } = await supabase
+      .from('products')
+      .select('id')
+      .eq('id', id)
+      .single();
+
+    if (checkError || !existingProduct) {
+      throw new Error('Product not found');
+    }
+
     const { data, error } = await supabase
       .from('products')
       .update(updates)
       .eq('id', id)
-      .select()
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Update product error:', error);
+      throw new Error(`Failed to update product: ${error.message}`);
+    }
+
+    if (!data) {
+      throw new Error('No data returned from product update');
+    }
+
+    return data;
+  },
+
+  async deleteProduct(id: string): Promise<void> {
+    // Soft delete: deactivate product instead of deleting
+    await this.deactivateProduct(id);
+  },
+
+  async deactivateProduct(id: string): Promise<Product> {
+    const { data, error } = await supabase
+      .from('products')
+      .update({ is_active: false })
+      .eq('id', id)
+      .select(`
+        *,
+        category:categories(*)
+      `)
       .single();
 
     if (error) throw error;
     return data;
   },
 
-  async deleteProduct(id: string): Promise<void> {
-    const { error } = await supabase
+  async activateProduct(id: string): Promise<Product> {
+    const { data, error } = await supabase
       .from('products')
-      .delete()
-      .eq('id', id);
+      .update({ is_active: true })
+      .eq('id', id)
+      .select(`
+        *,
+        category:categories(*)
+      `)
+      .single();
 
     if (error) throw error;
+    return data;
   },
 
   async getProductById(id: string): Promise<Product | null> {
