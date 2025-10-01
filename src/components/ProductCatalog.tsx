@@ -6,9 +6,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { api, Product } from "@/lib/supabase";
+import { api, Product, Category } from "@/lib/supabase";
 
-const ProductCatalog = () => {
+interface ProductCatalogProps {
+  onCartUpdate?: (totalPrice: number, totalProducts: number, totalCategories: number) => void;
+}
+
+const ProductCatalog = ({ onCartUpdate }: ProductCatalogProps) => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [quantities, setQuantities] = useState<Record<string, number>>({});
@@ -39,13 +43,38 @@ const ProductCatalog = () => {
     setQuantities(prev => {
       const current = prev[productId] || 0;
       const newQuantity = Math.max(0, current + change);
-      return { ...prev, [productId]: newQuantity };
+      const updated = { ...prev, [productId]: newQuantity };
+      updateCartSummary(updated);
+      return updated;
     });
   };
 
   const setQuantity = (productId: string, quantity: number) => {
     const numQuantity = Math.max(0, Math.floor(quantity));
-    setQuantities(prev => ({ ...prev, [productId]: numQuantity }));
+    setQuantities(prev => {
+      const updated = { ...prev, [productId]: numQuantity };
+      updateCartSummary(updated);
+      return updated;
+    });
+  };
+
+  const updateCartSummary = (currentQuantities: Record<string, number>) => {
+    const totalPrice = products.reduce((sum, product) => {
+      const qty = currentQuantities[product.id] || 0;
+      return sum + (product.discount_price * qty);
+    }, 0);
+
+    const totalProducts = Object.values(currentQuantities).reduce((sum, qty) => sum + qty, 0);
+
+    const categoriesWithProducts = new Set(
+      products
+        .filter(p => (currentQuantities[p.id] || 0) > 0)
+        .map(p => p.category_id)
+        .filter(Boolean)
+    );
+    const totalCategories = categoriesWithProducts.size;
+
+    onCartUpdate?.(totalPrice, totalProducts, totalCategories);
   };
 
   const calculateTotal = (product: Product) => {
@@ -56,6 +85,25 @@ const ProductCatalog = () => {
   const calculateDiscount = (originalPrice: number, discountPrice: number) => {
     return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
   };
+
+  const productsByCategory = useMemo(() => {
+    const grouped = products.reduce((acc, product) => {
+      const categoryId = product.category_id || 'uncategorized';
+      const categoryName = product.category?.name || 'Uncategorized';
+
+      if (!acc[categoryId]) {
+        acc[categoryId] = {
+          id: categoryId,
+          name: categoryName,
+          products: []
+        };
+      }
+      acc[categoryId].products.push(product);
+      return acc;
+    }, {} as Record<string, { id: string; name: string; products: Product[] }>);
+
+    return Object.values(grouped);
+  }, [products]);
 
   const addToCart = (product: Product) => {
     const quantity = quantities[product.id] || 0;
@@ -73,7 +121,6 @@ const ProductCatalog = () => {
       description: `${quantity}x ${product.name} added to your cart`,
     });
 
-    // In a real app, you would add this to a cart state/context
     console.log(`Added ${quantity}x ${product.name} to cart`);
   };
 
@@ -97,16 +144,17 @@ const ProductCatalog = () => {
   return (
     <div className="min-h-screen bg-background py-8">
       <div className="container mx-auto px-4">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="bg-discount text-discount-foreground p-4 rounded-lg mb-6 text-center">
-            <h2 className="text-2xl font-bold">SPARKLERS (80% DISCOUNT)</h2>
-          </div>
-        </div>
+        {productsByCategory.map((categoryGroup) => (
+          <div key={categoryGroup.id} className="mb-12">
+            <div className="mb-6">
+              <div className="bg-discount text-discount-foreground p-4 rounded-lg text-center">
+                <h2 className="text-2xl font-bold uppercase">{categoryGroup.name}</h2>
+              </div>
+            </div>
 
-        {/* Mobile Card View */}
-        <div className="block md:hidden space-y-4">
-          {products.map((product) => {
+            {/* Mobile Card View */}
+            <div className="block md:hidden space-y-4">
+              {categoryGroup.products.map((product) => {
             const discount = calculateDiscount(product.original_price, product.discount_price);
             const quantity = quantities[product.id] || 0;
             
@@ -176,26 +224,26 @@ const ProductCatalog = () => {
                 </CardContent>
               </Card>
             );
-          })}
-        </div>
+              })}
+            </div>
 
-        {/* Desktop Table View */}
-        <div className="hidden md:block overflow-x-auto">
-          <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
-            <thead>
-              <tr className="table-header">
-                <th className="border border-border p-3 text-left">Image</th>
-                <th className="border border-border p-3 text-left">Product Name</th>
-                <th className="border border-border p-3 text-left">Content</th>
-                <th className="border border-border p-3 text-left">Actual Price</th>
-                <th className="border border-border p-3 text-left">Price</th>
-                <th className="border border-border p-3 text-left">Quantity</th>
-                <th className="border border-border p-3 text-left">Total</th>
-                <th className="border border-border p-3 text-left">Action</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product, index) => {
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
+                <thead>
+                  <tr className="table-header">
+                    <th className="border border-border p-3 text-left">Image</th>
+                    <th className="border border-border p-3 text-left">Product Name</th>
+                    <th className="border border-border p-3 text-left">Content</th>
+                    <th className="border border-border p-3 text-left">Actual Price</th>
+                    <th className="border border-border p-3 text-left">Price</th>
+                    <th className="border border-border p-3 text-left">Quantity</th>
+                    <th className="border border-border p-3 text-left">Total</th>
+                    <th className="border border-border p-3 text-left">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {categoryGroup.products.map((product, index) => {
                 const discount = calculateDiscount(product.original_price, product.discount_price);
                 const quantity = quantities[product.id] || 0;
                 
@@ -274,10 +322,12 @@ const ProductCatalog = () => {
                     </td>
                   </tr>
                 );
-              })}
-            </tbody>
-          </table>
-        </div>
+                })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   );
