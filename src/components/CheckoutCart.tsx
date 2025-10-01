@@ -14,6 +14,8 @@ import { api, Product } from "@/lib/supabase";
 import StickyCartBar from "@/components/StickyCartBar";
 import { useCart } from "@/contexts/CartContext";
 
+// Import the StickyCartBar component
+
 interface CartItem extends Product {
   quantity: number;
 }
@@ -548,6 +550,7 @@ const CheckoutCart = () => {
           </Sheet>
         </div>
       </div>
+      {/* Footer Navigation */}
       <StickyCartBar />
     </>
   );
