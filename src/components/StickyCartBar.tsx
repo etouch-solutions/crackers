@@ -8,6 +8,10 @@ const StickyCartBar = () => {
   const totalItems = getTotalItems();
   const categoriesCount = getSelectedCategoriesCount();
 
+  // Don't show the bar if cart is empty
+  if (totalItems === 0) {
+    return null;
+  }
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground shadow-lg z-50 border-t-4 border-primary-foreground/20">
       <div className="container mx-auto px-4 py-3">

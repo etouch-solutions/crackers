@@ -108,8 +108,13 @@ const CheckoutCart = () => {
       }
     });
 
-    setLocalQuantities({});
+    // Don't clear local quantities - keep them for user reference
     setIsCartOpen(true);
+    
+    toast({
+      title: "Added to cart!",
+      description: `${totalItems} items added to your cart`,
+    });
   };
 
   const handleBookNow = async () => {
@@ -369,15 +374,30 @@ const CheckoutCart = () => {
 
           {/* Single Add to Cart Button */}
           <div className="flex justify-center">
-            <Button
-              onClick={handleAddToCart}
-              size="xl"
-              variant="hero"
-              className="min-w-[200px]"
-            >
-              <ShoppingCart className="h-5 w-5 mr-2" />
-              Add to Cart ({getLocalTotalItems()})
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-4 items-center">
+              <Button
+                onClick={handleAddToCart}
+                size="xl"
+                variant="hero"
+                className="min-w-[200px]"
+                disabled={getLocalTotalItems() === 0}
+              >
+                <ShoppingCart className="h-5 w-5 mr-2" />
+                Add to Cart ({getLocalTotalItems()})
+              </Button>
+              
+              {getLocalTotalItems() > 0 && (
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground">Selected Total:</p>
+                  <p className="text-lg font-bold text-primary">
+                    ₹{Object.entries(localQuantities).reduce((total, [productId, quantity]) => {
+                      const product = products.find(p => p.id === productId);
+                      return total + (product ? product.discount_price * quantity : 0);
+                    }, 0).toFixed(2)}
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Side Cart Sheet */}
