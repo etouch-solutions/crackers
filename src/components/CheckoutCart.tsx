@@ -37,7 +37,7 @@ const CheckoutCart = () => {
     address: "",
   });
   const { toast } = useToast();
-  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart } = useCart();
+  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart, getSelectedCategoriesCount } = useCart();
 
   useEffect(() => {
     loadProducts();

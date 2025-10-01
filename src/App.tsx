@@ -25,13 +25,13 @@ const App = () => (
               <Route path="/" element={<HomePage />} />
               <Route path="/products" element={
                 <>
-                  <Navigation cartItemCount={3} />
+                  <Navigation />
                   <CheckoutCart />
                 </>
               } />
               <Route path="/cart" element={
                 <>
-                  <Navigation cartItemCount={3} />
+                  <Navigation />
                   <Cart />
                 </>
               } />

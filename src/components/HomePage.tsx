@@ -76,7 +76,7 @@ const HomePage = () => {
 
   return (
     <>
-      <Navigation cartItemCount={3} />
+      <Navigation />
       <div className="min-h-screen bg-background">
       {/* Hero Section */}
       <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">

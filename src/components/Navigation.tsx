@@ -3,14 +3,16 @@ import { Link, useLocation } from "react-router-dom";
 import { ShoppingCart, Menu, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { useCart } from "@/contexts/CartContext";
 
-interface NavigationProps {
-  cartItemCount?: number;
-}
+interface NavigationProps {}
 
-const Navigation = ({ cartItemCount = 0 }: NavigationProps) => {
+const Navigation = ({}: NavigationProps) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const location = useLocation();
+  const { getTotalItems } = useCart();
+  
+  const cartItemCount = getTotalItems();
 
   const isActive = (path: string) => location.pathname === path;
 
