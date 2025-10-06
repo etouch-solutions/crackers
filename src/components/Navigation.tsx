@@ -74,13 +74,14 @@ const Navigation = ({}: NavigationProps) => {
             ))}
           </nav>
 
-          {/* Orders and Mobile Menu Button */}
+          {/* Add to Cart Button and Mobile Menu Button */}
           <div className="flex items-center space-x-4">
-            <Button variant="outline" size="icon" asChild className="relative">
-              <Link to="/orders" aria-label="View Orders">
+            <Button variant="hero" size="default" asChild className="relative">
+              <Link to="/cart" className="flex items-center gap-2">
                 <ShoppingCart className="h-4 w-4" />
+                <span className="hidden sm:inline">Add to Cart</span>
                 {orderCount > 0 && (
-                  <Badge className="absolute -top-2 -right-2 bg-discount text-discount-foreground min-w-[20px] h-5 text-xs flex items-center justify-center rounded-full">
+                  <Badge className="absolute -top-2 -right-2 bg-white text-primary min-w-[20px] h-5 text-xs flex items-center justify-center rounded-full font-bold border-2 border-primary">
                     {orderCount}
                   </Badge>
                 )}
