@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Plus, CreditCard as Edit, Trash2, Search, Package } from "lucide-react";
+import { Plus, CreditCard as Edit, Trash2, Search, Package, Upload, X as XIcon } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product, Category } from "@/lib/supabase";
 
@@ -37,6 +37,9 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
     category_id: "",
     stock_quantity: "",
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string>("");
   const { toast } = useToast();
 
   const itemsPerPage = 10;
@@ -77,12 +80,14 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
       category_id: "",
       stock_quantity: "",
     });
+    setSelectedFile(null);
+    setImagePreview("");
   };
 
   const handleAddProduct = async () => {
     try {
       setLoading(true);
-      
+
       if (!formData.name || !formData.content || !formData.original_price || !formData.discount_price) {
         toast({
           title: "Validation Error",
@@ -103,11 +108,29 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         return;
       }
 
+      let imageUrl = formData.image_url?.trim() || "https://images.pexels.com/photos/1387174/pexels-photo-1387174.jpeg";
+
+      if (selectedFile) {
+        setUploadingImage(true);
+        try {
+          imageUrl = await api.uploadProductImage(selectedFile);
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload image. Using default.",
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       const productData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
         content: formData.content.trim(),
-        image_url: formData.image_url?.trim() || "https://images.pexels.com/photos/1387174/pexels-photo-1387174.jpeg",
+        image_url: imageUrl,
         original_price: parseFloat(formData.original_price),
         discount_price: parseFloat(formData.discount_price),
         category_id: formData.category_id || null,
@@ -148,7 +171,7 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
 
     try {
       setLoading(true);
-      
+
       if (!formData.name || !formData.content || !formData.original_price || !formData.discount_price) {
         toast({
           title: "Validation Error",
@@ -159,11 +182,32 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
         return;
       }
 
+      let imageUrl = formData.image_url?.trim() || editingProduct.image_url;
+
+      if (selectedFile) {
+        setUploadingImage(true);
+        try {
+          imageUrl = await api.uploadProductImage(selectedFile);
+          if (editingProduct.image_url && editingProduct.image_url.includes('product-images')) {
+            await api.deleteProductImage(editingProduct.image_url);
+          }
+        } catch (error) {
+          console.error('Error uploading image:', error);
+          toast({
+            title: "Upload Error",
+            description: "Failed to upload image. Keeping existing image.",
+            variant: "destructive",
+          });
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+
       const updateData = {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
         content: formData.content.trim(),
-        image_url: formData.image_url?.trim() || editingProduct.image_url,
+        image_url: imageUrl,
         original_price: parseFloat(formData.original_price),
         discount_price: parseFloat(formData.discount_price),
         category_id: formData.category_id || null,
@@ -275,7 +319,35 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
       category_id: product.category_id || "",
       stock_quantity: product.stock_quantity.toString(),
     });
+    setImagePreview(product.image_url);
+    setSelectedFile(null);
     setIsEditDialogOpen(true);
+  };
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: "File too large",
+          description: "Please select an image under 5MB",
+          variant: "destructive",
+        });
+        return;
+      }
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setSelectedFile(null);
+    setImagePreview("");
+    setFormData({ ...formData, image_url: "" });
   };
 
   // Filter and sort products
@@ -355,13 +427,56 @@ const ProductManagement = ({ onStatsUpdate }: ProductManagementProps) => {
       </div>
 
       <div>
-        <Label htmlFor="image_url">Image URL</Label>
-        <Input
-          id="image_url"
-          value={formData.image_url}
-          onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
-          placeholder="Enter image URL"
-        />
+        <Label>Product Image</Label>
+        <div className="space-y-4">
+          <div className="flex items-center gap-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => document.getElementById('image-upload')?.click()}
+              disabled={uploadingImage}
+            >
+              <Upload className="h-4 w-4 mr-2" />
+              {uploadingImage ? "Uploading..." : "Upload Image"}
+            </Button>
+            <input
+              id="image-upload"
+              type="file"
+              accept="image/*"
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+            {(imagePreview || formData.image_url) && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleRemoveImage}
+              >
+                <XIcon className="h-4 w-4 mr-2" />
+                Remove
+              </Button>
+            )}
+          </div>
+          {(imagePreview || formData.image_url) && (
+            <div className="relative w-32 h-32 border rounded-md overflow-hidden">
+              <img
+                src={imagePreview || formData.image_url}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+            </div>
+          )}
+          <div className="text-sm text-muted-foreground">
+            Or enter image URL manually:
+          </div>
+          <Input
+            id="image_url"
+            value={formData.image_url}
+            onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+            placeholder="Enter image URL"
+          />
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

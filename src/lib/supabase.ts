@@ -362,5 +362,42 @@ export const api = {
       .eq('id', productId);
 
     if (error) throw error;
+  },
+
+  // Storage functions
+  async uploadProductImage(file: File): Promise<string> {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+    const filePath = `${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('product-images')
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from('product-images')
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
+  },
+
+  async deleteProductImage(imageUrl: string): Promise<void> {
+    try {
+      const fileName = imageUrl.split('/').pop();
+      if (!fileName) return;
+
+      const { error } = await supabase.storage
+        .from('product-images')
+        .remove([fileName]);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting image:', error);
+    }
   }
 };
