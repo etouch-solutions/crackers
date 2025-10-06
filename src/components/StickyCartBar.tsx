@@ -1,5 +1,5 @@
 import { useCart } from '@/contexts/CartContext';
-import { ShoppingCart, Package, Layers } from 'lucide-react';
+import { ShoppingCart, Package, Box } from 'lucide-react';
 import { Product } from '@/lib/supabase';
 
 interface StickyCartBarProps {
@@ -7,24 +7,24 @@ interface StickyCartBarProps {
   products?: Product[];
   getLocalTotalItems?: () => number;
   getLocalTotalPrice?: () => number;
-  getLocalCategoriesCount?: () => number;
+  getLocalUniqueProductsCount?: () => number;
 }
 
-const StickyCartBar = ({ 
-  localQuantities = {}, 
-  products = [], 
-  getLocalTotalItems, 
-  getLocalTotalPrice, 
-  getLocalCategoriesCount 
+const StickyCartBar = ({
+  localQuantities = {},
+  products = [],
+  getLocalTotalItems,
+  getLocalTotalPrice,
+  getLocalUniqueProductsCount
 }: StickyCartBarProps) => {
-  const { getTotalPrice, getTotalItems, getSelectedCategoriesCount } = useCart();
+  const { getTotalPrice, getTotalItems, getUniqueProductsCount } = useCart();
 
   // Use local selection data if available, otherwise use cart data
-  const hasLocalSelections = Object.keys(localQuantities).length > 0 && getLocalTotalItems && getLocalTotalPrice && getLocalCategoriesCount;
-  
+  const hasLocalSelections = Object.keys(localQuantities).length > 0 && getLocalTotalItems && getLocalTotalPrice && getLocalUniqueProductsCount;
+
   const totalPrice = hasLocalSelections ? getLocalTotalPrice() : getTotalPrice();
   const totalItems = hasLocalSelections ? getLocalTotalItems() : getTotalItems();
-  const categoriesCount = hasLocalSelections ? getLocalCategoriesCount() : getSelectedCategoriesCount();
+  const uniqueProductsCount = hasLocalSelections ? getLocalUniqueProductsCount() : getUniqueProductsCount();
 
   return (
     <div className="fixed bottom-0 left-0 right-0 bg-primary text-primary-foreground shadow-lg z-50 border-t-4 border-primary-foreground/20 min-h-[80px]">
@@ -40,10 +40,10 @@ const StickyCartBar = ({
             </div>
 
             <div className="flex items-center gap-2">
-              <Layers className="h-5 w-5" />
+              <Box className="h-5 w-5" />
               <div>
-                <p className="text-xs opacity-90">Categories</p>
-                <p className="text-sm font-bold">{categoriesCount}</p>
+                <p className="text-xs opacity-90">Products</p>
+                <p className="text-sm font-bold">{uniqueProductsCount}</p>
               </div>
             </div>
 

@@ -15,6 +15,7 @@ interface CartContextType {
   getTotalPrice: () => number;
   getTotalItems: () => number;
   getSelectedCategoriesCount: () => number;
+  getUniqueProductsCount: () => number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -96,6 +97,10 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return categories.size;
   };
 
+  const getUniqueProductsCount = () => {
+    return items.filter(item => item.quantity > 0).length;
+  };
+
   return (
     <CartContext.Provider
       value={{
@@ -107,6 +112,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children
         getTotalPrice,
         getTotalItems,
         getSelectedCategoriesCount,
+        getUniqueProductsCount,
       }}
     >
       {children}

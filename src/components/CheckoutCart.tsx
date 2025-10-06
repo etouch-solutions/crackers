@@ -39,7 +39,7 @@ const CheckoutCart = () => {
     address: "",
   });
   const { toast } = useToast();
-  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart, getSelectedCategoriesCount } = useCart();
+  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart } = useCart();
 
   useEffect(() => {
     loadProducts();
@@ -95,17 +95,8 @@ const CheckoutCart = () => {
     }, 0);
   };
 
-  const getLocalCategoriesCount = () => {
-    const selectedCategories = new Set();
-    Object.entries(localQuantities).forEach(([productId, quantity]) => {
-      if (quantity > 0) {
-        const product = products.find(p => p.id === productId);
-        if (product && product.category) {
-          selectedCategories.add(product.category.name);
-        }
-      }
-    });
-    return selectedCategories.size;
+  const getLocalUniqueProductsCount = () => {
+    return Object.values(localQuantities).filter(quantity => quantity > 0).length;
   };
 
   const calculateDiscount = (originalPrice: number, discountPrice: number) => {
@@ -547,14 +538,22 @@ const CheckoutCart = () => {
                       </CardContent>
                     </Card>
 
-                    <Button
-                      onClick={handleBookNow}
-                      size="lg"
-                      variant="hero"
-                      className="w-full"
-                    >
-                      Book Now - ₹{getTotalPrice().toFixed(2)}
-                    </Button>
+                    <div className="space-y-2">
+                      {getTotalPrice() < 3000 && (
+                        <p className="text-sm text-amber-600 font-medium text-center">
+                          Minimum order value: ₹3000 (₹{(3000 - getTotalPrice()).toFixed(2)} more needed)
+                        </p>
+                      )}
+                      <Button
+                        onClick={handleBookNow}
+                        size="lg"
+                        variant="hero"
+                        className="w-full"
+                        disabled={getTotalPrice() < 3000}
+                      >
+                        Book Now - ₹{getTotalPrice().toFixed(2)}
+                      </Button>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-8">
@@ -571,12 +570,12 @@ const CheckoutCart = () => {
         </div>
       </div>
       {/* Footer Navigation */}
-      <StickyCartBar 
+      <StickyCartBar
         localQuantities={localQuantities}
         products={products}
         getLocalTotalItems={getLocalTotalItems}
         getLocalTotalPrice={getLocalTotalPrice}
-        getLocalCategoriesCount={getLocalCategoriesCount}
+        getLocalUniqueProductsCount={getLocalUniqueProductsCount}
       />
     </>
   );
