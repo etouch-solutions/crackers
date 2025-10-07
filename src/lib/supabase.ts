@@ -15,6 +15,7 @@ export interface Category {
   name: string;
   description?: string;
   image_url?: string;
+  display_order: number;
   created_at: string;
 }
 
@@ -193,16 +194,22 @@ export const api = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .order('name');
+      .order('display_order', { ascending: true });
 
     if (error) throw error;
     return data || [];
   },
 
-  async createCategory(category: Omit<Category, 'id' | 'created_at'>): Promise<Category> {
+  async createCategory(category: Omit<Category, 'id' | 'created_at' | 'display_order'>): Promise<Category> {
+    const { count } = await supabase
+      .from('categories')
+      .select('*', { count: 'exact', head: true });
+
+    const nextDisplayOrder = (count || 0) + 1;
+
     const { data, error } = await supabase
       .from('categories')
-      .insert(category)
+      .insert({ ...category, display_order: nextDisplayOrder })
       .select()
       .single();
 

@@ -82,13 +82,25 @@ const ProductCatalog = () => {
   const productsByCategory = useMemo(() => {
     const grouped = products.reduce((acc, product) => {
       const categoryName = product.category?.name || 'Uncategorized';
+      const displayOrder = product.category?.display_order ?? 999;
       if (!acc[categoryName]) {
-        acc[categoryName] = [];
+        acc[categoryName] = {
+          products: [],
+          displayOrder: displayOrder
+        };
       }
-      acc[categoryName].push(product);
+      acc[categoryName].products.push(product);
       return acc;
-    }, {} as Record<string, Product[]>);
-    return grouped;
+    }, {} as Record<string, { products: Product[], displayOrder: number }>);
+
+    const sortedCategories = Object.entries(grouped).sort(([, a], [, b]) =>
+      a.displayOrder - b.displayOrder
+    );
+
+    return sortedCategories.map(([categoryName, data]) => ({
+      categoryName,
+      products: data.products
+    }));
   }, [products]);
 
   if (loading) {
@@ -109,7 +121,7 @@ const ProductCatalog = () => {
 
         {/* Mobile Card View - Grouped by Category */}
         <div className="block md:hidden space-y-8">
-          {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+          {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
             <div key={categoryName} className="space-y-4">
               <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
                 {categoryName}
@@ -191,7 +203,7 @@ const ProductCatalog = () => {
 
         {/* Desktop Table View - Grouped by Category */}
         <div className="hidden md:block space-y-8">
-          {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+          {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
             <div key={categoryName} className="space-y-4">
               <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
                 {categoryName}
