@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, Plus, Minus, ShoppingCart } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { api, Product } from "@/lib/supabase";
@@ -29,6 +30,7 @@ interface CustomerDetails {
 
 const CheckoutCart = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
   const [isCartOpen, setIsCartOpen] = useState(false);
@@ -332,7 +334,8 @@ const CheckoutCart = () => {
                               <img
                                 src={product.image_url}
                                 alt={product.name}
-                                className="w-16 h-16 object-cover rounded-md"
+                                className="w-16 h-16 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                                onClick={() => setSelectedImage(product.image_url)}
                               />
                             </td>
                             <td className="border border-border p-3 font-medium">
@@ -577,6 +580,27 @@ const CheckoutCart = () => {
         getLocalTotalPrice={getLocalTotalPrice}
         getLocalUniqueProductsCount={getLocalUniqueProductsCount}
       />
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl p-0">
+          <div className="relative">
+            <img
+              src={selectedImage || ""}
+              alt="Product preview"
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
