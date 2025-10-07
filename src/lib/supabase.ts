@@ -74,7 +74,8 @@ export const api = {
         *,
         category:categories(*)
       `)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -199,10 +200,16 @@ export const api = {
     return data || [];
   },
 
-  async createCategory(category: Omit<Category, 'id' | 'created_at'>): Promise<Category> {
+  async createCategory(category: Omit<Category, 'id' | 'created_at' | 'display_order'>): Promise<Category> {
+    const { count } = await supabase
+      .from('categories')
+      .select('*', { count: 'exact', head: true });
+
+    const nextDisplayOrder = (count || 0) + 1;
+
     const { data, error } = await supabase
       .from('categories')
-      .insert(category)
+      .insert({ ...category, display_order: nextDisplayOrder })
       .select()
       .single();
 

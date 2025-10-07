@@ -93,15 +93,14 @@ const ProductCatalog = () => {
       return acc;
     }, {} as Record<string, { products: Product[], displayOrder: number }>);
 
-    const sortedEntries = Object.entries(grouped).sort((a, b) => {
-      const orderA = a[1].displayOrder;
-      const orderB = b[1].displayOrder;
-      return orderA - orderB;
-    });
+    const sortedCategories = Object.entries(grouped).sort(([, a], [, b]) =>
+      a.displayOrder - b.displayOrder
+    );
 
-    const result = sortedEntries.map(([name, data]) => [name, data.products]);
-
-    return Object.fromEntries(result);
+    return sortedCategories.map(([categoryName, data]) => ({
+      categoryName,
+      products: data.products
+    }));
   }, [products]);
 
   if (loading) {
@@ -122,7 +121,7 @@ const ProductCatalog = () => {
 
         {/* Mobile Card View - Grouped by Category */}
         <div className="block md:hidden space-y-8">
-          {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+          {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
             <div key={categoryName} className="space-y-4">
               <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
                 {categoryName}
@@ -204,7 +203,7 @@ const ProductCatalog = () => {
 
         {/* Desktop Table View - Grouped by Category */}
         <div className="hidden md:block space-y-8">
-          {Object.entries(productsByCategory).map(([categoryName, categoryProducts]) => (
+          {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
             <div key={categoryName} className="space-y-4">
               <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
                 {categoryName}
