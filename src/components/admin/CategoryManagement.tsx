@@ -26,6 +26,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
     name: "",
     description: "",
     image_url: "",
+    display_order: 0,
   });
   const { toast } = useToast();
 
@@ -55,6 +56,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
       name: "",
       description: "",
       image_url: "",
+      display_order: 0,
     });
   };
 
@@ -73,6 +75,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
         image_url: formData.image_url?.trim() || null,
+        display_order: formData.display_order,
       });
 
       toast({
@@ -111,6 +114,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
         name: formData.name.trim(),
         description: formData.description?.trim() || null,
         image_url: formData.image_url?.trim() || null,
+        display_order: formData.display_order,
       });
 
       toast({
@@ -158,6 +162,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
       name: category.name,
       description: category.description || "",
       image_url: category.image_url || "",
+      display_order: category.display_order || 0,
     });
     setIsEditDialogOpen(true);
   };
@@ -192,6 +197,18 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
           value={formData.image_url}
           onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
           placeholder="Enter image URL"
+        />
+      </div>
+
+      <div>
+        <Label htmlFor="display_order">Display Order</Label>
+        <Input
+          id="display_order"
+          type="number"
+          value={formData.display_order}
+          onChange={(e) => setFormData({ ...formData, display_order: parseInt(e.target.value) || 0 })}
+          placeholder="Enter display order (lower numbers appear first)"
+          min="0"
         />
       </div>
 
@@ -260,6 +277,7 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Order</TableHead>
                   <TableHead>Name</TableHead>
                   <TableHead>Description</TableHead>
                   <TableHead>Image</TableHead>
@@ -270,6 +288,9 @@ const CategoryManagement = ({ onStatsUpdate }: CategoryManagementProps) => {
               <TableBody>
                 {categories.map((category) => (
                   <TableRow key={category.id}>
+                    <TableCell>
+                      <Badge variant="outline">{category.display_order}</Badge>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <Layers className="h-4 w-4 text-primary" />
