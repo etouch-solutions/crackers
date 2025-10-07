@@ -94,7 +94,7 @@ const ProductCatalog = () => {
     }, {} as Record<string, { products: Product[], displayOrder: number }>);
 
     const sortedCategories = Object.entries(grouped).sort(([, a], [, b]) =>
-      a.displayOrder - b.displayOrder
+      b.displayOrder - a.displayOrder
     );
 
     return sortedCategories.map(([categoryName, data]) => ({

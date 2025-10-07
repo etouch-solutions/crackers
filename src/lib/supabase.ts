@@ -194,18 +194,21 @@ export const api = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .order('display_order', { ascending: true });
+      .order('display_order', { ascending: false });
 
     if (error) throw error;
     return data || [];
   },
 
   async createCategory(category: Omit<Category, 'id' | 'created_at' | 'display_order'>): Promise<Category> {
-    const { count } = await supabase
+    const { data: maxData } = await supabase
       .from('categories')
-      .select('*', { count: 'exact', head: true });
+      .select('display_order')
+      .order('display_order', { ascending: false })
+      .limit(1)
+      .maybeSingle();
 
-    const nextDisplayOrder = (count || 0) + 1;
+    const nextDisplayOrder = (maxData?.display_order || 0) + 1;
 
     const { data, error } = await supabase
       .from('categories')
