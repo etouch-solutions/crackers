@@ -94,12 +94,14 @@ const ProductCatalog = () => {
     }, {} as Record<string, { products: Product[], displayOrder: number }>);
 
     const sortedEntries = Object.entries(grouped).sort((a, b) => {
-      return a[1].displayOrder - b[1].displayOrder;
+      const orderA = a[1].displayOrder;
+      const orderB = b[1].displayOrder;
+      return orderA - orderB;
     });
 
-    return Object.fromEntries(
-      sortedEntries.map(([name, data]) => [name, data.products])
-    );
+    const result = sortedEntries.map(([name, data]) => [name, data.products]);
+
+    return Object.fromEntries(result);
   }, [products]);
 
   if (loading) {
