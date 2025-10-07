@@ -74,8 +74,7 @@ export const api = {
         *,
         category:categories(*)
       `)
-      .eq('is_active', true)
-      .order('created_at', { ascending: false });
+      .eq('is_active', true);
 
     if (error) throw error;
     return data || [];
