@@ -194,8 +194,7 @@ export const api = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .order('display_order', { ascending: true })
-      .order('name', { ascending: true });
+      .order('display_order', { ascending: true });
 
     if (error) throw error;
     return data || [];
