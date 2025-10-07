@@ -82,26 +82,13 @@ const ProductCatalog = () => {
   const productsByCategory = useMemo(() => {
     const grouped = products.reduce((acc, product) => {
       const categoryName = product.category?.name || 'Uncategorized';
-      const displayOrder = product.category?.display_order ?? 999;
       if (!acc[categoryName]) {
-        acc[categoryName] = {
-          products: [],
-          displayOrder: displayOrder
-        };
+        acc[categoryName] = [];
       }
-      acc[categoryName].products.push(product);
+      acc[categoryName].push(product);
       return acc;
-    }, {} as Record<string, { products: Product[], displayOrder: number }>);
-
-    const sortedEntries = Object.entries(grouped).sort((a, b) => {
-      const orderA = a[1].displayOrder;
-      const orderB = b[1].displayOrder;
-      return orderA - orderB;
-    });
-
-    const result = sortedEntries.map(([name, data]) => [name, data.products]);
-
-    return Object.fromEntries(result);
+    }, {} as Record<string, Product[]>);
+    return grouped;
   }, [products]);
 
   if (loading) {

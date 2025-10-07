@@ -15,7 +15,6 @@ export interface Category {
   name: string;
   description?: string;
   image_url?: string;
-  display_order: number;
   created_at: string;
 }
 
@@ -74,7 +73,8 @@ export const api = {
         *,
         category:categories(*)
       `)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data || [];
@@ -193,7 +193,7 @@ export const api = {
     const { data, error } = await supabase
       .from('categories')
       .select('*')
-      .order('display_order', { ascending: true });
+      .order('name');
 
     if (error) throw error;
     return data || [];
