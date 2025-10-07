@@ -378,7 +378,7 @@ const CheckoutCart = () => {
                               </div>
                             </td>
                             <td className="border border-border p-3">
-                              <span className="text-lg font-bold text-primary">
+                              <span className="text-lg font-bold text-emerald-600">
                                 ₹{(product.discount_price * quantity).toFixed(2)}
                               </span>
                             </td>
