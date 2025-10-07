@@ -277,6 +277,18 @@ export const api = {
     return data && data.length > 0 ? data[0] : null;
   },
 
+  async updateCustomer(id: string, updates: Partial<Omit<Customer, 'id' | 'created_at'>>): Promise<Customer> {
+    const { data, error } = await supabase
+      .from('customers')
+      .update(updates)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  },
+
   // Orders
   async createOrder(order: Omit<Order, 'id' | 'created_at'>): Promise<Order> {
     const { data, error } = await supabase

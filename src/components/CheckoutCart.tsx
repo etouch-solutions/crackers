@@ -160,6 +160,12 @@ const CheckoutCart = () => {
           phone: customerDetails.phone,
           address: customerDetails.address,
         });
+      } else {
+        customer = await api.updateCustomer(customer.id, {
+          name: customerDetails.name,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+        });
       }
 
       const order = await api.createOrder({
