@@ -1,210 +1,636 @@
 import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, Star, Zap, Gift, Flower } from "lucide-react";
-import { api, Category } from "@/lib/supabase";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { ArrowRight, Star, Zap, Gift, Flower, Plus, Minus, ShoppingCart, X } from "lucide-react";
+import { api, Product } from "@/lib/supabase";
 import Navigation from "./Navigation";
+import StickyCartBar from "@/components/StickyCartBar";
+import { useCart } from "@/contexts/CartContext";
+import { useToast } from "@/hooks/use-toast";
 
-// Import images
 import heroBanner from "@/assets/hero-banner.jpg";
-import sparklersCategory from "@/assets/sparklers-category.jpg";
-import rocketsCategory from "@/assets/rockets-category.jpg";
-import giftBoxesCategory from "@/assets/gift-boxes-category.jpg";
-import flowerPotsCategory from "@/assets/flower-pots-category.jpg";
+
+interface CustomerDetails {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+}
 
 const HomePage = () => {
-  const [categories, setCategories] = useState([
-    {
-      id: "sparklers",
-      name: "Sparklers",
-      image: sparklersCategory,
-      icon: Star,
-      description: "Beautiful sparklers for celebrations",
-      path: "/products?category=sparklers",
-    },
-    {
-      id: "rockets",
-      name: "Rockets",
-      image: rocketsCategory,
-      icon: Zap,
-      description: "High-flying aerial fireworks",
-      path: "/products?category=rockets",
-    },
-    {
-      id: "gift-boxes",
-      name: "Gift Boxes",
-      image: giftBoxesCategory,
-      icon: Gift,
-      description: "Perfect firework gift sets",
-      path: "/products?category=gift-boxes",
-    },
-    {
-      id: "flower-pots",
-      name: "Flower Pots",
-      image: flowerPotsCategory,
-      icon: Flower,
-      description: "Ground-based colorful fountains",
-      path: "/products?category=flower-pots",
-    },
-  ]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [localQuantities, setLocalQuantities] = useState<Record<string, number>>({});
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [customerDetails, setCustomerDetails] = useState<CustomerDetails>({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+  const { toast } = useToast();
+  const { items: cartItems, addToCart, updateQuantity: updateCartQuantity, removeFromCart, getTotalPrice, getTotalItems, clearCart } = useCart();
 
   useEffect(() => {
-    loadCategories();
+    loadProducts();
   }, []);
 
-  const loadCategories = async () => {
+  const loadProducts = async () => {
     try {
-      setLoading(false); // Keep static categories for now
-      // Uncomment below to load from database
-      // const data = await api.getCategories();
-      // setCategories(data.map(cat => ({
-      //   id: cat.id,
-      //   name: cat.name.charAt(0).toUpperCase() + cat.name.slice(1),
-      //   image: cat.image_url || sparklersCategory,
-      //   icon: Star, // You can map different icons based on category
-      //   description: cat.description || `Premium ${cat.name} for celebrations`,
-      //   path: `/products?category=${cat.name}`,
-      // })));
+      setLoading(true);
+      const data = await api.getProducts();
+      setProducts(data);
     } catch (error) {
-      console.error('Error loading categories:', error);
+      console.error('Error loading products:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load products. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
       setLoading(false);
     }
   };
+
+  const updateLocalQuantity = (productId: string, change: number) => {
+    setLocalQuantities(prev => {
+      const current = prev[productId] || 0;
+      const newQuantity = Math.max(0, current + change);
+      if (newQuantity === 0) {
+        const { [productId]: removed, ...rest } = prev;
+        return rest;
+      }
+      return { ...prev, [productId]: newQuantity };
+    });
+  };
+
+  const setLocalQuantity = (productId: string, quantity: number) => {
+    const numQuantity = Math.max(0, Math.floor(quantity));
+    if (numQuantity === 0) {
+      const { [productId]: removed, ...rest } = localQuantities;
+      setLocalQuantities(rest);
+    } else {
+      setLocalQuantities(prev => ({ ...prev, [productId]: numQuantity }));
+    }
+  };
+
+  const getLocalTotalItems = () => {
+    return Object.values(localQuantities).reduce((total, quantity) => total + quantity, 0);
+  };
+
+  const getLocalTotalPrice = () => {
+    return Object.entries(localQuantities).reduce((total, [productId, quantity]) => {
+      const product = products.find(p => p.id === productId);
+      return total + (product ? product.discount_price * quantity : 0);
+    }, 0);
+  };
+
+  const getLocalUniqueProductsCount = () => {
+    return Object.values(localQuantities).filter(quantity => quantity > 0).length;
+  };
+
+  const calculateDiscount = (originalPrice: number, discountPrice: number) => {
+    return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
+  };
+
+  const handleAddToCart = () => {
+    const totalItems = getLocalTotalItems();
+    if (totalItems === 0) {
+      toast({
+        title: "No items selected",
+        description: "Please select quantities for the products you want to purchase",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    Object.entries(localQuantities).forEach(([productId, quantity]) => {
+      const product = products.find(p => p.id === productId);
+      if (product && quantity > 0) {
+        addToCart(product, quantity);
+      }
+    });
+
+    setIsCartOpen(true);
+
+    toast({
+      title: "Added to cart!",
+      description: `${totalItems} items added to your cart`,
+    });
+  };
+
+  const handleBookNow = async () => {
+    if (cartItems.length === 0) {
+      toast({
+        title: "Cart is empty",
+        description: "Please add some items to your cart first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!customerDetails.name || !customerDetails.email || !customerDetails.phone || !customerDetails.address) {
+      toast({
+        title: "Missing details",
+        description: "Please fill in all customer details to complete your booking",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      let customer = await api.getCustomerByEmail(customerDetails.email);
+      if (!customer) {
+        customer = await api.createCustomer({
+          name: customerDetails.name,
+          email: customerDetails.email,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+        });
+      } else {
+        customer = await api.updateCustomer(customer.id, {
+          name: customerDetails.name,
+          phone: customerDetails.phone,
+          address: customerDetails.address,
+        });
+      }
+
+      const order = await api.createOrder({
+        customer_id: customer.id,
+        total_amount: getTotalPrice(),
+        status: 'pending',
+      });
+
+      const orderItems = cartItems.map(item => ({
+        order_id: order.id,
+        product_id: item.product.id,
+        quantity: item.quantity,
+        unit_price: item.product.discount_price,
+        total_price: item.product.discount_price * item.quantity,
+      }));
+
+      await api.createOrderItems(orderItems);
+
+      for (const item of cartItems) {
+        const newStock = item.product.stock_quantity - item.quantity;
+        await api.updateProductStock(item.product.id, Math.max(0, newStock));
+      }
+
+      toast({
+        title: "Order confirmed!",
+        description: `Your order has been placed successfully!`,
+      });
+
+      clearCart();
+      setCustomerDetails({ name: "", email: "", phone: "", address: "" });
+      setLocalQuantities({});
+      setIsCartOpen(false);
+
+      await loadProducts();
+      window.location.reload();
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: "Order failed",
+        description: "There was an error processing your order. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleInputChange = (field: keyof CustomerDetails, value: string) => {
+    setCustomerDetails(prev => ({ ...prev, [field]: value }));
+  };
+
+  const productsByCategory = useMemo(() => {
+    const grouped = products.reduce((acc, product) => {
+      const categoryName = product.category?.name || 'Uncategorized';
+      const displayOrder = product.category?.display_order || 0;
+      if (!acc[categoryName]) {
+        acc[categoryName] = { products: [], displayOrder };
+      }
+      acc[categoryName].products.push(product);
+      return acc;
+    }, {} as Record<string, { products: Product[], displayOrder: number }>);
+
+    const sortedCategories = Object.entries(grouped).sort(([, a], [, b]) =>
+      b.displayOrder - a.displayOrder
+    );
+
+    return sortedCategories.map(([categoryName, data]) => ({
+      categoryName,
+      products: data.products
+    }));
+  }, [products]);
 
   return (
     <>
       <Navigation />
       <div className="min-h-screen bg-background">
-      {/* Hero Section */}
-      <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-          style={{ backgroundImage: `url(${heroBanner})` }}
-        >
-          <div className="absolute inset-0 bg-black/50" />
-        </div>
-        
-        <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-          <Badge className="mb-4 bg-discount text-discount-foreground text-lg px-4 py-2 font-bold animate-pulse">
-            🎆 80% OFF SPECIAL DISCOUNT! 🎆
-          </Badge>
-          
-          <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
-            Light Up Your Celebrations
-          </h1>
-          
-          <p className="text-xl md:text-2xl mb-8 text-gray-200">
-            Premium fireworks and sparklers for unforgettable moments
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button variant="hero" size="xl" asChild>
-              <Link to="/products">
-                Shop Now <ArrowRight className="ml-2 h-5 w-5" />
-              </Link>
-            </Button>
-            
-            <Button variant="discount" size="xl" asChild>
-              <Link to="/products?offer=true">
-                Check Offers 🔥
-              </Link>
-            </Button>
+        {/* Hero Section */}
+        <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{ backgroundImage: `url(${heroBanner})` }}
+          >
+            <div className="absolute inset-0 bg-black/50" />
           </div>
-        </div>
-      </section>
 
-      {/* Categories Section */}
-      <section className="py-20 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-foreground">
-              Shop by Category
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              Discover our premium collection of fireworks and celebration essentials
+          <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
+            <Badge className="mb-4 bg-discount text-discount-foreground text-lg px-4 py-2 font-bold animate-pulse">
+              🎆 80% OFF SPECIAL DISCOUNT! 🎆
+            </Badge>
+
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+              Light Up Your Celebrations
+            </h1>
+
+            <p className="text-xl md:text-2xl mb-8 text-gray-200">
+              Premium fireworks and sparklers for unforgettable moments
             </p>
           </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            {categories.map((category) => {
-              const IconComponent = category.icon;
-              return (
-                <Card key={category.id} className="group hover:shadow-lg transition-all duration-300 hover:-translate-y-2">
-                  <CardContent className="p-0">
-                    <div className="relative overflow-hidden rounded-t-lg">
-                      <img
-                        src={category.image}
-                        alt={category.name}
-                        className="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-300"
-                      />
-                      <div className="absolute top-4 left-4">
-                        <div className="bg-primary text-primary-foreground p-2 rounded-full">
-                          <IconComponent className="h-5 w-5" />
-                        </div>
+        {/* Products Section */}
+        <section className="py-8 pb-32">
+          <div className="container mx-auto px-4">
+            {loading ? (
+              <div className="text-center py-8">
+                <p className="text-muted-foreground">Loading products...</p>
+              </div>
+            ) : (
+              <>
+                {/* Mobile Card View - Grouped by Category */}
+                <div className="block md:hidden space-y-8 mb-8">
+                  {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
+                    <div key={categoryName} className="space-y-4">
+                      <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
+                        {categoryName}
+                      </h2>
+                      {categoryProducts.map((product) => {
+                        const discount = calculateDiscount(product.original_price, product.discount_price);
+                        const quantity = localQuantities[product.id] || 0;
+
+                        return (
+                          <Card key={product.id} className="card-product">
+                            <CardContent className="p-4">
+                              <div className="flex gap-4">
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="w-20 h-20 object-cover rounded-md flex-shrink-0"
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-semibold text-sm mb-1">{product.name}</h3>
+                                  <p className="text-xs text-muted-foreground mb-2">{product.content}</p>
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="price-original text-xs">₹{product.original_price}</span>
+                                    <span className="price-current text-sm">₹{product.discount_price}</span>
+                                    <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => updateLocalQuantity(product.id, -1)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Minus className="h-3 w-3" />
+                                    </Button>
+                                    <Input
+                                      type="number"
+                                      value={quantity}
+                                      onChange={(e) => setLocalQuantity(product.id, parseInt(e.target.value) || 0)}
+                                      className="input-quantity h-6 w-12 text-xs"
+                                      min="0"
+                                    />
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => updateLocalQuantity(product.id, 1)}
+                                      className="h-6 w-6 p-0"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Desktop Table View - Grouped by Category */}
+                <div className="hidden md:block space-y-8 mb-8">
+                  {productsByCategory.map(({ categoryName, products: categoryProducts }) => (
+                    <div key={categoryName} className="space-y-4">
+                      <h2 className="text-2xl font-bold capitalize bg-primary text-primary-foreground p-4 rounded-lg text-center">
+                        {categoryName}
+                      </h2>
+                      <div className="overflow-x-auto">
+                        <table className="w-full border-collapse border border-border rounded-lg overflow-hidden">
+                          <thead>
+                            <tr className="table-header">
+                              <th className="border border-border p-3 text-left">Image</th>
+                              <th className="border border-border p-3 text-left">Product Name</th>
+                              <th className="border border-border p-3 text-left">Content</th>
+                              <th className="border border-border p-3 text-left">Actual Price</th>
+                              <th className="border border-border p-3 text-left">Price</th>
+                              <th className="border border-border p-3 text-left">Quantity</th>
+                              <th className="border border-border p-3 text-left">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {categoryProducts.map((product, index) => {
+                              const discount = calculateDiscount(product.original_price, product.discount_price);
+                              const quantity = localQuantities[product.id] || 0;
+
+                              return (
+                                <tr key={product.id} className={index % 2 === 0 ? "bg-background" : "bg-muted/30"}>
+                                  <td className="border border-border p-3">
+                                    <img
+                                      src={product.image_url}
+                                      alt={product.name}
+                                      className="w-16 h-16 object-cover rounded-md cursor-pointer hover:opacity-80 transition-opacity"
+                                      onClick={() => setSelectedImage(product.image_url)}
+                                    />
+                                  </td>
+                                  <td className="border border-border p-3 font-medium">
+                                    {product.name}
+                                  </td>
+                                  <td className="border border-border p-3 text-sm text-muted-foreground">
+                                    {product.content}
+                                  </td>
+                                  <td className="border border-border p-3">
+                                    <div className="flex items-center gap-2">
+                                      <span className="price-original">₹{product.original_price}</span>
+                                      <Badge className="badge-discount text-xs">{discount}% OFF</Badge>
+                                    </div>
+                                  </td>
+                                  <td className="border border-border p-3">
+                                    <span className="price-current">₹{product.discount_price}</span>
+                                  </td>
+                                  <td className="border border-border p-3">
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updateLocalQuantity(product.id, -1)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Minus className="h-4 w-4" />
+                                      </Button>
+                                      <Input
+                                        type="number"
+                                        value={quantity}
+                                        onChange={(e) => setLocalQuantity(product.id, parseInt(e.target.value) || 0)}
+                                        className="input-quantity"
+                                        min="0"
+                                      />
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => updateLocalQuantity(product.id, 1)}
+                                        className="h-8 w-8 p-0"
+                                      >
+                                        <Plus className="h-4 w-4" />
+                                      </Button>
+                                    </div>
+                                  </td>
+                                  <td className="border border-border p-3">
+                                    <span className="text-lg font-bold text-emerald-600">
+                                      ₹{(product.discount_price * quantity).toFixed(2)}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
                       </div>
                     </div>
-                    
-                    <div className="p-6">
-                      <h3 className="text-xl font-semibold mb-2 text-foreground">
-                        {category.name}
-                      </h3>
-                      <p className="text-muted-foreground mb-4">
-                        {category.description}
+                  ))}
+                </div>
+
+                {/* Single Add to Cart Button */}
+                <div className="flex justify-center">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <Button
+                      onClick={handleAddToCart}
+                      size="xl"
+                      variant="hero"
+                      className="min-w-[200px]"
+                      disabled={getLocalTotalItems() === 0}
+                    >
+                      <ShoppingCart className="h-5 w-5 mr-2" />
+                      Add to Cart ({getLocalTotalItems()})
+                    </Button>
+
+                    {getLocalTotalItems() > 0 && (
+                      <div className="text-center">
+                        <p className="text-sm text-muted-foreground">Selected Total:</p>
+                        <p className="text-lg font-bold text-primary">
+                          ₹{getLocalTotalPrice().toFixed(2)}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </section>
+
+        {/* Side Cart Sheet */}
+        <Sheet open={isCartOpen} onOpenChange={setIsCartOpen}>
+          <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
+            <SheetHeader>
+              <SheetTitle className="flex items-center gap-2">
+                <ShoppingCart className="h-5 w-5" />
+                Your Cart ({getTotalItems()} items)
+              </SheetTitle>
+            </SheetHeader>
+
+            <div className="mt-6 space-y-6">
+              {cartItems.length > 0 ? (
+                <div className="space-y-4">
+                  {cartItems.map((item) => (
+                    <Card key={item.id} className="p-4">
+                      <div className="flex gap-3">
+                        <img
+                          src={item.product.image_url}
+                          alt={item.product.name}
+                          className="w-16 h-16 object-cover rounded-md flex-shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-medium text-sm">{item.product.name}</h4>
+                          <p className="text-xs text-muted-foreground">{item.product.content}</p>
+                          <div className="flex items-center justify-between mt-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateCartQuantity(item.product.id, item.quantity - 1)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <span className="text-sm font-medium w-8 text-center">{item.quantity}</span>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => updateCartQuantity(item.product.id, item.quantity + 1)}
+                                className="h-6 w-6 p-0"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-primary">
+                                ₹{(item.product.discount_price * item.quantity).toFixed(2)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+
+                  <Separator />
+
+                  <div className="flex justify-between items-center text-lg font-bold">
+                    <span>Total:</span>
+                    <span className="text-primary">₹{getTotalPrice().toFixed(2)}</span>
+                  </div>
+
+                  <Separator />
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Customer Details</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor="name">Full Name *</Label>
+                        <Input
+                          id="name"
+                          value={customerDetails.name}
+                          onChange={(e) => handleInputChange("name", e.target.value)}
+                          placeholder="Enter your full name"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="email">Email *</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={customerDetails.email}
+                          onChange={(e) => handleInputChange("email", e.target.value)}
+                          placeholder="Enter your email"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="phone">Phone Number *</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={customerDetails.phone}
+                          onChange={(e) => handleInputChange("phone", e.target.value)}
+                          placeholder="Enter your phone number"
+                          className="mt-1"
+                        />
+                      </div>
+
+                      <div>
+                        <Label htmlFor="address">Address *</Label>
+                        <Textarea
+                          id="address"
+                          value={customerDetails.address}
+                          onChange={(e) => handleInputChange("address", e.target.value)}
+                          placeholder="Enter your complete address"
+                          className="mt-1"
+                          rows={3}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <div className="space-y-2">
+                    {getTotalPrice() < 3000 && (
+                      <p className="text-sm text-amber-600 font-medium text-center">
+                        Minimum order value: ₹3000 (₹{(3000 - getTotalPrice()).toFixed(2)} more needed)
                       </p>
-                      <Button variant="outline" asChild className="w-full">
-                        <Link to={category.path}>
-                          Explore {category.name}
-                        </Link>
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="py-20 bg-muted">
-        <div className="container mx-auto max-w-6xl px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4 text-foreground">
-              Why Choose FireworkShop?
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="bg-primary text-primary-foreground w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Star className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Premium Quality</h3>
-              <p className="text-muted-foreground">Only the finest fireworks from trusted manufacturers</p>
+                    )}
+                    <Button
+                      onClick={handleBookNow}
+                      size="lg"
+                      variant="hero"
+                      className="w-full"
+                      disabled={getTotalPrice() < 3000}
+                    >
+                      Book Now - ₹{getTotalPrice().toFixed(2)}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <ShoppingCart className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">Your cart is empty</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Add some products to get started
+                  </p>
+                </div>
+              )}
             </div>
-
-            <div className="text-center">
-              <div className="bg-success text-success-foreground w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Zap className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Fast Delivery</h3>
-              <p className="text-muted-foreground">Quick and safe delivery to your doorstep</p>
-            </div>
-
-            <div className="text-center">
-              <div className="bg-discount text-discount-foreground w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Gift className="h-8 w-8" />
-              </div>
-              <h3 className="text-xl font-semibold mb-2">Best Prices</h3>
-              <p className="text-muted-foreground">Unbeatable prices with amazing discounts</p>
-            </div>
-          </div>
-        </div>
-      </section>
+          </SheetContent>
+        </Sheet>
       </div>
+
+      {/* Footer Navigation */}
+      <StickyCartBar
+        localQuantities={localQuantities}
+        products={products}
+        getLocalTotalItems={getLocalTotalItems}
+        getLocalTotalPrice={getLocalTotalPrice}
+        getLocalUniqueProductsCount={getLocalUniqueProductsCount}
+      />
+
+      {/* Image Preview Dialog */}
+      <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
+        <DialogContent className="max-w-4xl p-0">
+          <div className="relative">
+            <img
+              src={selectedImage || ""}
+              alt="Product preview"
+              className="w-full h-auto max-h-[80vh] object-contain"
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 bg-background/80 hover:bg-background"
+              onClick={() => setSelectedImage(null)}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
