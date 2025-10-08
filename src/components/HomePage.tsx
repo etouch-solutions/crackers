@@ -237,7 +237,7 @@ const HomePage = () => {
       <Navigation />
       <div className="min-h-screen bg-background">
         {/* Hero Section */}
-        <section className="relative h-[80vh] flex items-center justify-center overflow-hidden">
+        <section className="relative h-[40vh] flex items-center justify-center overflow-hidden">
           <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${heroBanner})` }}
@@ -250,11 +250,11 @@ const HomePage = () => {
               🎆 80% OFF SPECIAL DISCOUNT! 🎆
             </Badge>
 
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+            <h1 className="text-3xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
               Light Up Your Celebrations
             </h1>
 
-            <p className="text-xl md:text-2xl mb-8 text-gray-200">
+            <p className="text-lg md:text-xl mb-4 text-gray-200">
               Premium fireworks and sparklers for unforgettable moments
             </p>
           </div>
